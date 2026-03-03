@@ -2,7 +2,9 @@ import type { SendToKindleService } from "../domain/send-to-kindle-service.js";
 import { Title, Author, MarkdownContent } from "../domain/values/index.js";
 import type { DomainError } from "../domain/errors.js";
 
+// MCP SDK response type
 interface McpToolResponse {
+  [key: string]: unknown;
   content: Array<{ type: "text"; text: string }>;
   isError?: boolean;
 }
