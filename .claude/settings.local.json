@@ -8,6 +8,8 @@
       "WebFetch(domain:nodemailer.com)",
       "Skill(claude-developer-platform)",
       "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
       "Bash(npm install:*)",
       "Bash(npx tsc:*)",
       "Bash(npx vitest:*)"
