@@ -60,7 +60,7 @@ A user working with an AI assistant (Claude) frequently generates long-form cont
 
 ### Configuration
 
-- **FR-13**: The system must be configurable with: Kindle delivery email address, sender email address, SMTP host/port/credentials, and a default author name
+- **FR-13**: The system must be configurable with: Kindle delivery email address, sender email address, SMTP host/port/credentials, and a default author name. When running locally, configuration may be provided via a `.env` file in the project root; environment variables always take precedence over `.env` values
 - **FR-14**: All configuration must be provided through environment variables or a configuration file — no credentials may be passed as tool parameters
 
 ### Validation
@@ -88,6 +88,7 @@ A user working with an AI assistant (Claude) frequently generates long-form cont
 - **C-5**: The system relies on an external SMTP provider for email delivery; it does not implement its own mail transfer agent
 - **C-6**: Amazon's service imposes format and size constraints on accepted attachments — the system must produce files in formats Amazon accepts (`.epub`)
 - **C-7**: The system must run as a containerized application, packaged with all its dependencies and ready to deploy via a container runtime
+- **C-8**: For local development, the system must support loading configuration from a `.env` file as a fallback. Environment variables set by the container runtime always take precedence; `.env` is never loaded in production containers where env vars are already injected
 
 ## 7. Key Scenarios
 
