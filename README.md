@@ -13,7 +13,7 @@ An MCP server that lets Claude send Markdown content directly to your Kindle. Wr
 ## Prerequisites
 
 - **Node.js 22** or later
-- An **SMTP account** (Gmail, Fastmail, etc.) with an app password
+- An **SMTP account** — any provider works; Gmail is the easiest option, see [Gmail setup](#gmail-setup) below
 - Your **Kindle email address** (found in Amazon account settings under "Send to Kindle")
 - The SMTP sender address must be in your [Amazon approved senders list](https://www.amazon.com/sendtokindle)
 
@@ -30,6 +30,8 @@ Copy `.env.example` to `.env` and fill in your values:
 ```bash
 cp .env.example .env
 ```
+
+> The `.env` file loads automatically when running locally. In Docker, set environment variables directly — they take precedence over `.env`.
 
 ### Required Environment Variables
 
@@ -153,11 +155,24 @@ Error codes: `VALIDATION_ERROR`, `SIZE_ERROR`, `CONVERSION_ERROR`, `SMTP_ERROR`.
 ## Development
 
 ```bash
-npm run dev          # Run with tsx (hot reload)
+npm run dev          # Run with tsx (no build step)
 npm run build        # Compile TypeScript to dist/
-npm test             # Run tests
+npm test             # Run automated tests
 npm run test:watch   # Run tests in watch mode
+npm run test:email   # Send a real test email to verify SMTP config
 ```
+
+### Gmail Setup (Recommended)
+
+Any SMTP provider works. Gmail is recommended for personal use — it's free, requires no domain, and has no sending restrictions for individual use.
+
+Gmail requires an **App Password** — your regular password will not work for SMTP.
+
+1. Enable 2-Step Verification: Google Account → Security → 2-Step Verification
+2. Create an App Password: Google Account → Security → App Passwords
+3. Use the generated 16-character password as `SMTP_PASS` in `.env`
+
+Then add your sender address to Amazon's approved list: Amazon Account → Manage Your Content and Devices → Preferences → Personal Document Settings → Approved Personal Document E-mail List.
 
 ## Architecture
 

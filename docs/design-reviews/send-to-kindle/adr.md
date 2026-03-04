@@ -56,6 +56,7 @@ The domain layer imports nothing from infrastructure or application.
 
 **MarkdownEpubConverter** (implements `ContentConverter`):
 - Pipeline: Markdown → `marked.parse()` → `sanitize-html` → `epub-gen-memory` → `EpubDocument`
+- Uses `epub-gen-memory` via its `EPub` named export: `new EPub(options, chapters).genEpub()` returns `Promise<Buffer>`. The package default export is not callable.
 - Generates the sanitized filename (URL-safe slug + `.epub`) when constructing `EpubDocument`
 - Library: `epub-gen-memory` (in-memory, async, EPUB 3.0, TypeScript)
 
@@ -73,7 +74,8 @@ The domain layer imports nothing from infrastructure or application.
 - Coerces `SMTP_PORT` to number
 
 **Logger:**
-- Standard structured logger (e.g., `pino`) used directly — no custom logging wrapper
+- Standard structured logger (`pino`) used directly — no custom logging wrapper
+- Configured to write to stderr (`pino.destination(2)`) — stdout is reserved for JSON-RPC when using stdio transport
 - Credential safety ensured by architecture: credentials never reach log call sites
 
 ### Application Layer
@@ -191,6 +193,7 @@ None — all 15 critique findings were accepted. Key decisions:
 ### Corrections Made
 
 - **Architect assumed synchronous EPUB generation** — the suggested library (`epub-gen-memory`) is async. This was caught by the Critique but should have been caught by the Architect when specifying library choices. *Improvement: when the Architect recommends a specific library, verify its API contract matches the interface being designed.*
+- **Implementation used wrong `epub-gen-memory` entry point** — the default export is an object, not a callable function. The correct API is the named `EPub` constructor: `new EPub(options, chapters).genEpub()`. The error was swallowed by a `try/catch` and returned as a `ConversionError`, causing silent failures that the test suite did not catch because tests only asserted `result.ok === true` without verifying the failure path. *Improvement: tests should assert the error path explicitly (e.g., `if (!result.ok) throw new Error(result.error.message)`) so silent failures surface immediately.*
 - **Refiner placed Config in domain** — operational parameters (SMTP settings, HTTP ports) are not domain concepts. The Refiner applied "separate shape from loading" correctly but put the shape in the wrong layer. *Improvement: the Refiner should apply a litmus test — "would a domain expert recognize this concept?" — before placing types in the domain layer.*
 - **Refiner modeled errors as discriminated union but used throw** — mixed two incompatible patterns. *Improvement: when introducing typed errors, the Refiner should specify the propagation mechanism (Result vs exceptions) at the same time, not leave it implicit.*
 

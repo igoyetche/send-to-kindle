@@ -76,7 +76,7 @@ A user working with an AI assistant (Claude) frequently generates long-form cont
 - **NFR-3 — Security**: SMTP credentials and the Kindle email address must never appear in tool call parameters, tool responses, or logs accessible to the MCP client
 - **NFR-4 — Security**: Markdown input must be sanitized during conversion to prevent injection of scripts or malicious content in the generated EPUB
 - **NFR-5 — Security**: Remote access to the system must be authenticated and encrypted — the MCP endpoint must not be publicly accessible without access control
-- **NFR-6 — Observability**: The system must log each delivery attempt with: timestamp, document title, output format, file size, and success/failure status. Logs must not contain SMTP credentials
+- **NFR-6 — Observability**: The system must log each delivery attempt with: timestamp, document title, output format, file size, and success/failure status. Logs must not contain SMTP credentials. When using stdio transport, logs must be written to stderr — stdout is reserved exclusively for JSON-RPC messages
 - **NFR-7 — Portability**: The system must be deployable on x86_64 and ARM64 architectures (to support common servers and single-board computers like Raspberry Pi)
 
 ## 6. Constraints
