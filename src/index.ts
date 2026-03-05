@@ -19,7 +19,7 @@ const mailer = new SmtpMailer({
   smtp: config.smtp,
 });
 const service = new SendToKindleService(converter, mailer, deliveryLogger);
-const toolHandler = new ToolHandler(service, config.defaultAuthor);
+const toolHandler = new ToolHandler(service, config.defaultAuthor, config.devices);
 
 const server = new McpServer({
   name: "send-to-kindle",
@@ -37,6 +37,10 @@ server.tool(
       .string()
       .optional()
       .describe("Author name for document metadata (defaults to configured value)"),
+    device: z
+      .string()
+      .optional()
+      .describe("Name of the Kindle device to send to (from configured devices)"),
   },
   async (args) => toolHandler.handle(args),
 );
@@ -83,6 +87,10 @@ if (config.http) {
         title: z.string().describe("Document title"),
         content: z.string().describe("Document content in Markdown format"),
         author: z.string().optional().describe("Author name"),
+        device: z
+          .string()
+          .optional()
+          .describe("Name of the Kindle device to send to (from configured devices)"),
       },
       async (args) => toolHandler.handle(args),
     );
