@@ -1,4 +1,4 @@
-# Feature: Multiple Kindle Addresses
+# PB-003: Multiple Kindle Addresses
 
 > Status: Done
 > Created: 2026-03-05

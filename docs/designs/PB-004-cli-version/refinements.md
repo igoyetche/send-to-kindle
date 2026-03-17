@@ -1,4 +1,4 @@
-# Refinements: CLI Version Design
+# PB-004: CLI Version — Refinements
 
 > Reviewed against: separation-of-concerns, tactical-ddd
 > Date: 2026-03-17

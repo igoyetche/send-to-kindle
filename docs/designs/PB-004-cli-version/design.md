@@ -1,4 +1,4 @@
-# Design: CLI Version + Claude Code Skill
+# PB-004: CLI Version + Claude Code Skill — Design
 
 > Status: Draft
 > Feature: docs/features/backlog/cli-version.md

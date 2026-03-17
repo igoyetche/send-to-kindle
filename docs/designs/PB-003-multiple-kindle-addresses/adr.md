@@ -1,4 +1,4 @@
-# ADR: Multiple Kindle Addresses
+# PB-003 ADR: Multiple Kindle Addresses
 
 **Status:** Proposed
 **Date:** 2026-03-05

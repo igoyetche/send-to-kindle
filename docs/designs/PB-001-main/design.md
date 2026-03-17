@@ -1,4 +1,4 @@
-# Send to Kindle MCP Server -- Architecture Design
+# PB-001: Send to Kindle MCP Server — Architecture Design
 
 ## 1. Executive Summary
 

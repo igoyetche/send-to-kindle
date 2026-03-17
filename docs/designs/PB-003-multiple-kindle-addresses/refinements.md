@@ -1,4 +1,4 @@
-# Refinements: Multiple Kindle Addresses
+# PB-003: Multiple Kindle Addresses — Refinements
 
 > Reviewed against: Separation of Concerns (SoC-001 through SoC-015) and Tactical DDD (principles 1 through 9)
 

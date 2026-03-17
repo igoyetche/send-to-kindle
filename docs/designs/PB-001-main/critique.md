@@ -1,4 +1,4 @@
-# Critique for send-to-kindle
+# PB-001 Critique: Send to Kindle MCP Server
 
 Reviewed: docs/design-reviews/send-to-kindle/refined.md
 

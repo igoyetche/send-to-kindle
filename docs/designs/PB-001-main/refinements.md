@@ -1,4 +1,4 @@
-# Refinements to Send to Kindle MCP Server Architecture
+# PB-001: Refinements to Send to Kindle MCP Server Architecture
 
 This document catalogs specific issues found in the original `design.md` and the reasoning behind each proposed change. The refinements are grounded in two design disciplines: **Separation of Concerns** and **Tactical Domain-Driven Design**.
 

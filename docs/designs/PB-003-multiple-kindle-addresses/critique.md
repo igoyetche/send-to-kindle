@@ -1,4 +1,4 @@
-# Critique for multiple-kindle-addresses
+# PB-003 Critique: Multiple Kindle Addresses
 
 Reviewed: docs/design-reviews/multiple-kindle-addresses/refined.md
 

@@ -1,4 +1,4 @@
-# Multiple Kindle Addresses Implementation Plan
+# PB-003: Multiple Kindle Addresses — Implementation Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 

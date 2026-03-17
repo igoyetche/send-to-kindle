@@ -1,4 +1,4 @@
-# Send to Kindle MCP Server — Implementation Plan
+# PB-001: Send to Kindle MCP Server — Implementation Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 

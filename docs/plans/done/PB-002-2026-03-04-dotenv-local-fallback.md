@@ -1,4 +1,4 @@
-# dotenv Local Fallback Implementation Plan
+# PB-002: dotenv Local Fallback — Implementation Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 

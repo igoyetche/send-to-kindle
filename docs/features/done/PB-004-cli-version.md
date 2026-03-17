@@ -1,4 +1,4 @@
-# Feature: CLI Version + Claude Code Skill
+# PB-004: CLI Version + Claude Code Skill
 
 > Status: Done
 > Created: 2026-03-05

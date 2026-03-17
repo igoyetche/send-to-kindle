@@ -1,4 +1,4 @@
-# Feature: Trusted HTTPS Certificate for Remote Access
+# PB-006: Trusted HTTPS Certificate for Remote Access
 
 > Status: Backlog
 > Created: 2026-03-05

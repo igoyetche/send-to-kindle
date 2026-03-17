@@ -25,7 +25,7 @@ A single-user tool that sends Markdown content to a Kindle device in one step—
 Feature → Design → Spec → Plan → Implement → Test → Validate → Sync
 ```
 
-1. **FEATURE** — Create feature doc in `docs/features/backlog/[name].md` with motivation, scope, acceptance criteria
+1. **FEATURE** — Create feature doc in `docs/features/backlog/[name].md` with motivation, scope, acceptance criteria. Assign the next sequential ticket code (`PB-NNN`) in the feature header. Check `docs/STATUS.md` for the last used code.
 2. **DESIGN** — Create design doc in `docs/designs/[name].md` exploring technical approach and affected specs
 3. **SPEC** — Update affected specs in `docs/specs/` based on approved design; log changes in `docs/CHANGELOG.md`
 4. **PLAN** — Create plan in `docs/plans/backlog/[name].md` with tasks referencing spec requirements; add row to `docs/STATUS.md`
@@ -133,7 +133,7 @@ Features, plans, and designs have explicit **status folders**. Move files betwee
 - CLI: file input, stdin piping, dual dotenv resolution
 - Containerized, runs on x86_64 and ARM64
 
-See `docs/specs/main-spec.md` for full requirements. See `docs/design/main/adr.md` for architecture decisions. See `docs/designs/cli-version/adr.md` for CLI design decisions. See `docs/STATUS.md` for project status and `docs/CHANGELOG.md` for decision log.
+See `docs/specs/main-spec.md` for full requirements. See `docs/designs/PB-001-main/adr.md` for architecture decisions. See `docs/designs/PB-004-cli-version/adr.md` for CLI design decisions. See `docs/STATUS.md` for project status and `docs/CHANGELOG.md` for decision log.
 
 ## Architecture
 
@@ -159,7 +159,7 @@ Application Layer  →  Domain Layer  ←  Infrastructure Layer
 - MCP Transport: stdio (default) + HTTP/SSE (when `MCP_HTTP_PORT` is set)
 - CLI Transport: `cli-entry.ts` composition root with dual dotenv loading
 
-See `docs/design/main/adr.md` for MCP design rationale. See `docs/designs/cli-version/adr.md` for CLI design rationale.
+See `docs/designs/PB-001-main/adr.md` for MCP design rationale. See `docs/designs/PB-004-cli-version/adr.md` for CLI design rationale.
 
 ## Project Structure
 

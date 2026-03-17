@@ -1,4 +1,4 @@
-# ADR: send-to-kindle
+# PB-001 ADR: Send to Kindle MCP Server
 
 **Status:** Accepted
 **Date:** 2026-03-03

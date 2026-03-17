@@ -1,4 +1,4 @@
-# ADR: cli-version
+# PB-004 ADR: CLI Version + Claude Code Skill
 
 **Status:** Accepted
 **Date:** 2026-03-17

@@ -1,4 +1,4 @@
-# Feature: URL to Kindle
+# PB-005: URL to Kindle
 
 > Status: Backlog
 > Created: 2026-03-05

@@ -1,4 +1,4 @@
-# Critique for cli-version
+# PB-004 Critique: CLI Version + Claude Code Skill
 
 Reviewed: docs/designs/cli-version/refined.md
 
