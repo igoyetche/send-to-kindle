@@ -110,7 +110,7 @@ Features, plans, and designs have explicit **status folders**. Move files betwee
 - ✅ Application layer: MCP tool handler, CLI adapter, composition roots (MCP + CLI)
 - ✅ Deployment: multi-stage Dockerfile, docker-compose.yml
 - ✅ CLI: `paperboy` command with arg parsing, exit codes, dual dotenv loading
-- ✅ Claude Code skill: `.claude/skills/paperboy/SKILL.md`
+- ✅ Claude Code skill: `examples/claude-skill/SKILL.md`
 - ✅ Testing: 149 tests across 17 test files, 100% passing
 - ✅ TypeScript: strict mode, no `any`, no assertions
 
@@ -741,7 +741,7 @@ npm run test:watch   # Watch mode for development
    - npm bin field for `paperboy` CLI command
 
 5. ✅ **Claude Code Integration**
-   - Skill file at `.claude/skills/paperboy/SKILL.md`
+   - Skill file at `examples/claude-skill/SKILL.md`
 
 ### Key Features
 - **Type Safety:** Strict TypeScript, no `any`, no assertions

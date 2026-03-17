@@ -183,7 +183,7 @@ The CLI loads environment variables in the following order (first match wins):
 
 ### Claude Code Skill
 
-A skill file at `.claude/skills/paperboy/SKILL.md` teaches Claude Code how to invoke the CLI for send-to-Kindle workflows. The skill documents only implemented flags and capabilities.
+A skill file at `examples/claude-skill/SKILL.md` teaches Claude Code how to invoke the CLI for send-to-Kindle workflows. The skill documents only implemented flags and capabilities.
 
 ### Package Distribution
 
