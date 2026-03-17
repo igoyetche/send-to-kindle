@@ -1,18 +1,26 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+import { Readable } from "node:stream";
 import {
   parseArgs,
   resolveContentSource,
   mapErrorToExitCode,
   formatSuccess,
   formatError,
+  run,
 } from "../../src/application/cli.js";
-import type { CliArgs } from "../../src/application/cli.js";
+import type { CliArgs, CliDeps } from "../../src/application/cli.js";
 import {
   ValidationError,
   SizeLimitError,
   ConversionError,
   DeliveryError,
+  ok,
+  err,
 } from "../../src/domain/errors.js";
+import type { SendToKindleService } from "../../src/domain/send-to-kindle-service.js";
+import { DeviceRegistry } from "../../src/domain/device-registry.js";
+import { KindleDevice } from "../../src/domain/values/kindle-device.js";
+import { EmailAddress } from "../../src/domain/values/email-address.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -354,6 +362,272 @@ describe("formatError", () => {
       const result = formatError("");
 
       expect(result).toBe("Error: ");
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// run helpers
+// ---------------------------------------------------------------------------
+
+function makeRunDevice(name: string, email = "user@kindle.com"): KindleDevice {
+  const emailResult = EmailAddress.create(email);
+  if (!emailResult.ok) throw new Error("bad test setup: invalid email");
+  const deviceResult = KindleDevice.create(name, emailResult.value);
+  if (!deviceResult.ok) throw new Error("bad test setup: invalid device name");
+  return deviceResult.value;
+}
+
+function makeRunRegistry(...names: string[]): DeviceRegistry {
+  const devices = names.map((n, i) => makeRunDevice(n, `d${i}@kindle.com`));
+  const result = DeviceRegistry.create(devices);
+  if (!result.ok) throw new Error("bad test setup: invalid registry");
+  return result.value;
+}
+
+function fakeRunService(
+  result = ok({ title: "Test", sizeBytes: 1024, deviceName: "personal" }),
+): Pick<SendToKindleService, "execute"> {
+  return {
+    execute: vi.fn().mockResolvedValue(result),
+  };
+}
+
+function makeDeps(overrides?: Partial<CliDeps>): CliDeps {
+  return {
+    service: fakeRunService(),
+    devices: makeRunRegistry("personal"),
+    defaultAuthor: "Claude",
+    argv: ["--title", "Test", "--file", "notes.md"],
+    isTTY: true,
+    readFromFile: vi.fn().mockResolvedValue("# Hello"),
+    readFromStdin: vi.fn().mockResolvedValue("# Hello"),
+    stdin: Readable.from([]),
+    stderr: vi.fn(),
+    version: "1.0.0",
+    ...overrides,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// run
+// ---------------------------------------------------------------------------
+
+describe("run", () => {
+  describe("FR-CLI-4: happy path", () => {
+    it("FR-CLI-4: returns 0 and writes success message to stderr on valid args and successful service result", async () => {
+      const service = fakeRunService(
+        ok({ title: "Test", sizeBytes: 2048, deviceName: "personal" }),
+      );
+      const stderr = vi.fn();
+      const deps = makeDeps({ service, stderr });
+
+      const code = await run(deps);
+
+      expect(code).toBe(0);
+      const calls = stderr.mock.calls.map((c) => c[0] as string);
+      const combined = calls.join("\n");
+      expect(combined).toContain("Test");
+      expect(combined).toContain("personal");
+    });
+  });
+
+  describe("FR-CLI-4: --help and --version flags", () => {
+    it("FR-CLI-4: returns 0 and writes usage text to stderr when --help is passed", async () => {
+      const stderr = vi.fn();
+      const deps = makeDeps({ argv: ["--help"], stderr });
+
+      const code = await run(deps);
+
+      expect(code).toBe(0);
+      const calls = stderr.mock.calls.map((c) => c[0] as string);
+      const combined = calls.join("\n");
+      expect(combined).toContain("send-to-kindle");
+      expect(combined).toContain("--title");
+    });
+
+    it("FR-CLI-4: returns 0 and writes version string to stderr when --version is passed", async () => {
+      const stderr = vi.fn();
+      const deps = makeDeps({ argv: ["--version"], stderr, version: "2.3.4" });
+
+      const code = await run(deps);
+
+      expect(code).toBe(0);
+      const calls = stderr.mock.calls.map((c) => c[0] as string);
+      expect(calls).toContain("2.3.4");
+    });
+  });
+
+  describe("FR-CLI-4: missing --title", () => {
+    it("FR-CLI-4: returns 1 and writes error to stderr when --title is missing", async () => {
+      const stderr = vi.fn();
+      const deps = makeDeps({ argv: ["--file", "notes.md"], stderr });
+
+      const code = await run(deps);
+
+      expect(code).toBe(1);
+      const calls = stderr.mock.calls.map((c) => c[0] as string);
+      const combined = calls.join("\n");
+      expect(combined).toContain("--title");
+    });
+  });
+
+  describe("FR-CLI-4: --file pointing to nonexistent file", () => {
+    it("FR-CLI-4: returns 1 and writes not-found message to stderr when --file path does not exist", async () => {
+      const stderr = vi.fn();
+      const readFromFile = vi.fn().mockRejectedValue(
+        new Error("ENOENT: no such file or directory, open 'ghost.md'"),
+      );
+      const deps = makeDeps({
+        argv: ["--title", "Test", "--file", "ghost.md"],
+        readFromFile,
+        stderr,
+      });
+
+      const code = await run(deps);
+
+      expect(code).toBe(1);
+      const calls = stderr.mock.calls.map((c) => c[0] as string);
+      const combined = calls.join("\n");
+      expect(combined).toMatch(/not found|no such file|ENOENT/i);
+    });
+  });
+
+  describe("FR-CLI-4: --file pointing to oversized file", () => {
+    it("FR-CLI-4: returns 1 and writes size limit message to stderr when file content exceeds 25 MB", async () => {
+      const oversizedContent = "x".repeat(26 * 1024 * 1024);
+      const stderr = vi.fn();
+      const readFromFile = vi.fn().mockResolvedValue(oversizedContent);
+      const deps = makeDeps({
+        argv: ["--title", "Test", "--file", "big.md"],
+        readFromFile,
+        stderr,
+      });
+
+      const code = await run(deps);
+
+      expect(code).toBe(1);
+      const calls = stderr.mock.calls.map((c) => c[0] as string);
+      const combined = calls.join("\n");
+      expect(combined).toMatch(/limit|size|MB/i);
+    });
+  });
+
+  describe("FR-CLI-4: empty stdin content", () => {
+    it('FR-CLI-4: returns 1 and writes "No content received" to stderr when stdin yields empty string', async () => {
+      const stderr = vi.fn();
+      const readFromStdin = vi.fn().mockResolvedValue("");
+      const deps = makeDeps({
+        argv: ["--title", "Test"],
+        isTTY: false,
+        readFromStdin,
+        stderr,
+      });
+
+      const code = await run(deps);
+
+      expect(code).toBe(1);
+      const calls = stderr.mock.calls.map((c) => c[0] as string);
+      const combined = calls.join("\n");
+      expect(combined).toContain("No content received");
+    });
+  });
+
+  describe("FR-CLI-4: stdin with isTTY: true and no --file", () => {
+    it("FR-CLI-4: returns 1 and writes message about using --file or piping when stdin is a TTY and no --file given", async () => {
+      const stderr = vi.fn();
+      const deps = makeDeps({
+        argv: ["--title", "Test"],
+        isTTY: true,
+        stderr,
+      });
+
+      const code = await run(deps);
+
+      expect(code).toBe(1);
+      const calls = stderr.mock.calls.map((c) => c[0] as string);
+      const combined = calls.join("\n");
+      expect(combined).toMatch(/--file|pipe/i);
+    });
+  });
+
+  describe("FR-CLI-4: service error exit codes", () => {
+    it("FR-CLI-4: returns 2 when service returns ConversionError", async () => {
+      const service = fakeRunService(err(new ConversionError("EPUB gen failed")));
+      const deps = makeDeps({ service });
+
+      const code = await run(deps);
+
+      expect(code).toBe(2);
+    });
+
+    it("FR-CLI-4: returns 3 when service returns DeliveryError", async () => {
+      const service = fakeRunService(err(new DeliveryError("auth", "bad credentials")));
+      const deps = makeDeps({ service });
+
+      const code = await run(deps);
+
+      expect(code).toBe(3);
+    });
+  });
+
+  describe("FR-CLI-4: device resolution", () => {
+    it("FR-CLI-4: calls service with the resolved device when --device matches a registered device", async () => {
+      const service = fakeRunService(
+        ok({ title: "Test", sizeBytes: 512, deviceName: "partner" }),
+      );
+      const deps = makeDeps({
+        service,
+        argv: ["--title", "Test", "--file", "notes.md", "--device", "partner"],
+        devices: makeRunRegistry("personal", "partner"),
+      });
+
+      const code = await run(deps);
+
+      expect(code).toBe(0);
+      expect(service.execute).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+        expect.objectContaining({ name: "partner" }),
+      );
+    });
+
+    it("FR-CLI-4: returns 1 with error listing available devices when --device is unknown", async () => {
+      const stderr = vi.fn();
+      const deps = makeDeps({
+        argv: ["--title", "Test", "--file", "notes.md", "--device", "unknown-device"],
+        devices: makeRunRegistry("personal", "partner"),
+        stderr,
+      });
+
+      const code = await run(deps);
+
+      expect(code).toBe(1);
+      const calls = stderr.mock.calls.map((c) => c[0] as string);
+      const combined = calls.join("\n");
+      expect(combined).toContain("personal");
+      expect(combined).toContain("partner");
+    });
+  });
+
+  describe("FR-CLI-4: default author", () => {
+    it("FR-CLI-4: calls service with the default author from deps when --author flag is not provided", async () => {
+      const service = fakeRunService();
+      const deps = makeDeps({
+        service,
+        argv: ["--title", "Test", "--file", "notes.md"],
+        defaultAuthor: "DefaultBot",
+      });
+
+      await run(deps);
+
+      expect(service.execute).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.anything(),
+        expect.objectContaining({ value: "DefaultBot" }),
+        expect.anything(),
+      );
     });
   });
 });

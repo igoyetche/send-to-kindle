@@ -1,14 +1,18 @@
 /**
- * CLI argument parser, content source resolver, exit code mapper, and output formatter.
- * Implements pure functions with no I/O or side effects.
+ * CLI argument parser, content source resolver, exit code mapper, output formatter,
+ * and orchestration run function.
  *
  * Implements FR-CLI-1: CLI argument parsing
  * Implements FR-CLI-2: Exit code mapping
  * Implements FR-CLI-3: Output formatting
+ * Implements FR-CLI-4: CLI orchestration (run function)
  */
 
+import type { Readable } from "node:stream";
 import type { DomainError } from "../domain/errors.js";
-import type { DeliverySuccess } from "../domain/send-to-kindle-service.js";
+import type { DeliverySuccess, SendToKindleService } from "../domain/send-to-kindle-service.js";
+import type { DeviceRegistry } from "../domain/device-registry.js";
+import { Title, Author, MarkdownContent } from "../domain/values/index.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -281,4 +285,145 @@ EXAMPLES
   cat article.md | send-to-kindle --title "My Article"
   send-to-kindle --title "Notes" --file notes.md --author "Alice" --device "Alice's Kindle"
 `.trimStart();
+}
+
+// ---------------------------------------------------------------------------
+// CliDeps
+// ---------------------------------------------------------------------------
+
+/**
+ * External dependencies injected into the `run` function.
+ * All I/O is provided via this interface so the function stays testable
+ * without spawning real processes or touching the filesystem.
+ *
+ * Implements FR-CLI-4
+ */
+export interface CliDeps {
+  readonly service: Pick<SendToKindleService, "execute">;
+  readonly devices: DeviceRegistry;
+  readonly defaultAuthor: string;
+  readonly argv: ReadonlyArray<string>;
+  readonly isTTY: boolean;
+  readonly readFromFile: (path: string) => Promise<string>;
+  readonly readFromStdin: (stream: Readable) => Promise<string>;
+  readonly stdin: Readable;
+  readonly stderr: (message: string) => void;
+  readonly version: string;
+}
+
+// ---------------------------------------------------------------------------
+// run
+// ---------------------------------------------------------------------------
+
+/**
+ * Orchestrates the full CLI lifecycle: parse → resolve content source → read
+ * content → validate → send → report. Returns a POSIX exit code; never calls
+ * process.exit itself.
+ *
+ * Implements FR-CLI-4
+ */
+export async function run(deps: CliDeps): Promise<number> {
+  // Step 1: Parse args
+  const parsed = parseArgs(deps.argv);
+
+  // Step 2: Parse error → stderr + usage, exit 1
+  if (parsed.kind === "parse-error") {
+    deps.stderr(formatError(parsed.message));
+    deps.stderr(getUsageText());
+    return 1;
+  }
+
+  const args = parsed;
+
+  // Step 3: --help → usage, exit 0
+  if (args.help) {
+    deps.stderr(getUsageText());
+    return 0;
+  }
+
+  // Step 4: --version → version, exit 0
+  if (args.version) {
+    deps.stderr(deps.version);
+    return 0;
+  }
+
+  // Step 5: Resolve content source
+  const source = resolveContentSource(args, deps.isTTY);
+
+  // Step 6: Missing content source
+  if (source === "missing") {
+    deps.stderr(
+      "No content source provided. Use --file <path> to read from a file, or pipe Markdown content via stdin.",
+    );
+    return 1;
+  }
+
+  // Step 7: Read content
+  let content: string;
+  try {
+    if (source.kind === "file") {
+      content = await deps.readFromFile(source.path);
+    } else {
+      content = await deps.readFromStdin(deps.stdin);
+    }
+  } catch (e: unknown) {
+    const message =
+      e instanceof Error ? e.message : "Unknown error reading content.";
+    deps.stderr(formatError(message));
+    return 1;
+  }
+
+  // Step 8: Empty content check
+  if (content.length === 0) {
+    const emptyMessage =
+      source.kind === "file"
+        ? `File '${source.path}' is empty.`
+        : "No content received from stdin. Pipe markdown content or use --file.";
+    deps.stderr(formatError(emptyMessage));
+    return 1;
+  }
+
+  // Step 9: Create value objects
+  const titleResult = Title.create(args.title);
+  if (!titleResult.ok) {
+    deps.stderr(formatError(titleResult.error.message));
+    return mapErrorToExitCode(titleResult.error);
+  }
+
+  const authorRaw = args.author?.trim() ?? deps.defaultAuthor;
+  const authorResult = Author.create(authorRaw);
+  if (!authorResult.ok) {
+    deps.stderr(formatError(authorResult.error.message));
+    return mapErrorToExitCode(authorResult.error);
+  }
+
+  const contentResult = MarkdownContent.create(content);
+  if (!contentResult.ok) {
+    deps.stderr(formatError(contentResult.error.message));
+    return mapErrorToExitCode(contentResult.error);
+  }
+
+  // Step 10: Resolve device
+  const deviceResult = deps.devices.resolve(args.device);
+  if (!deviceResult.ok) {
+    deps.stderr(formatError(deviceResult.error.message));
+    return 1;
+  }
+
+  // Step 11 & 12: Execute service
+  const result = await deps.service.execute(
+    titleResult.value,
+    contentResult.value,
+    authorResult.value,
+    deviceResult.value,
+  );
+
+  if (!result.ok) {
+    deps.stderr(formatError(result.error.message));
+    return mapErrorToExitCode(result.error);
+  }
+
+  // Step 13: Success
+  deps.stderr(formatSuccess(result.value));
+  return 0;
 }

@@ -155,7 +155,7 @@ npx tsc --noEmit
 
 ---
 
-## Task 3: Add CLI `run` function with dependency injection `[ ]`
+## Task 3: Add CLI `run` function with dependency injection `[x]` (2026-03-17)
 
 ### Deliverable: The `run` function that wires parsing, content reading, value object creation, device resolution, service invocation, and result mapping into a single orchestration flow
 
