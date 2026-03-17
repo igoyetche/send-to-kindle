@@ -19,7 +19,7 @@
 
 | Feature | Specs Affected | Completed | Plan Archive |
 |---------|---|---|---|
-| CLI Version + Claude Code Skill | specs/main-spec.md | 2026-03-17 | plans/done/cli-version.md |
+| CLI Version + Claude Code Skill | specs/main-spec.md | 2026-03-17 | plans/done/2026-03-17-cli-version.md |
 | Send to Kindle MCP Server (MVP) | specs/main-spec.md | 2026-03-05 | plans/done/2026-03-03-send-to-kindle-mcp.md |
 | dotenv Local Fallback | specs/main-spec.md | 2026-03-05 | plans/done/2026-03-04-dotenv-local-fallback.md |
 | Multiple Kindle Addresses | specs/main-spec.md | 2026-03-05 | plans/done/2026-03-05-multiple-kindle-addresses.md |
