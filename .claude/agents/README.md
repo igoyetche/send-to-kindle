@@ -8,18 +8,19 @@ This directory contains agent definitions for the send-to-kindle-mcp project. Ea
 
 - **[Strategic Architect](./strategic-architect.md)** (`arc`) - System design, architecture decisions, scalability
 - **[Super TypeScript Developer](./super-typescript-developer.md)** (`tsc`) - TypeScript development, type safety
-- **[Super React Developer](./super-react-developer.md)** (`rct`) - React development, frontend, testing
 - **[Super TDD Developer](./super-tdd-developer.md)** (`tdd`) - Test-driven development, legacy code, refactoring
+- **[Implementer](./implementer.md)** - Module implementation from design documents
+- **[Reviewer](./reviewer.md)** - Implementation review against design and spec
+- **[Test Writer](./test-writer.md)** - Test creation for implemented modules
 
 ### Product & Planning
 
 - **[PRD Expert](./prd-expert.md)** (`prd`) - Product requirements, feature planning, milestones
 - **[Generalist Robot](./generalist-robot.md)** (`gen`) - Research, analysis, problem-solving
 
-### Documentation & Design
+### Documentation
 
 - **[Documentation Expert](./documentation-expert.md)** (`doc`) - Technical writing, code samples, API docs
-- **[UI/UX Design Leader](./ui-design-expert.md)** (`uix`) - Visual design, brand identity, UX strategy
 
 ## How to Use
 
@@ -80,12 +81,6 @@ async for message in query(
 - Enforcing strictness and best practices
 - Architecting type systems
 
-**Choose Super React Developer when:**
-- Building React applications
-- Implementing features with tests
-- Ensuring accessibility
-- Improving code quality
-
 **Choose Super TDD Developer when:**
 - Working with legacy code
 - Fixing bugs (test-first)
@@ -103,12 +98,6 @@ async for message in query(
 - Creating API documentation
 - Reviewing documentation quality
 - Testing code samples
-
-**Choose UI/UX Design Leader when:**
-- Designing visual interfaces
-- Developing brand identity
-- Creating design systems
-- Planning design direction
 
 **Choose Generalist Robot when:**
 - You need analysis across domains

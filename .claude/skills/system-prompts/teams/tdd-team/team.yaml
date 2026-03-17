@@ -1,7 +1,0 @@
-name: TDD Team Lead
-shortcut: team-tdd
-
-team:
-  - name: tdd-team-lead
-  - name: tdd-developer
-  - name: refactoring-expert

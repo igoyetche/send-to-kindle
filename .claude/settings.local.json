@@ -6,7 +6,6 @@
       "WebFetch(domain:github.com)",
       "WebFetch(domain:registry.npmjs.org)",
       "WebFetch(domain:nodemailer.com)",
-      "Skill(claude-developer-platform)",
       "Bash(cd:*)",
       "Bash(cd * && git *)",
       "Bash(git add:*)",
