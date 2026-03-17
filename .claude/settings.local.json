@@ -15,7 +15,16 @@
       "Bash(npx tsc:*)",
       "Bash(npx vitest:*)",
       "Bash(npm:*)",
-      "Bash(git:*)"
+      "Bash(git:*)",
+      "Edit(path:docs/**)",
+      "Edit(path:scripts/**)",
+      "Edit(path:src/**)",
+      "Edit(path:test/**)",
+      "Write(path:docs/**)",
+      "Write(path:scripts/**)",
+      "Write(path:src/**)",
+      "Write(path:test/**)",
+      "Bash(node:*)"      
     ]
   }
 }
