@@ -334,7 +334,7 @@ npx tsc --noEmit
 
 ---
 
-## Task 6: Add Claude Code skill file `[ ]`
+## Task 6: Add Claude Code skill file `[x]` (2026-03-17)
 
 ### Deliverable: `.claude/skills/paperboy/SKILL.md` that teaches Claude Code how to invoke the CLI
 
@@ -381,7 +381,7 @@ Visual inspection. The skill file is documentation, not code.
 
 ---
 
-## Task 7: Add bin integration test `[ ]`
+## Task 7: Add bin integration test `[x]` (2026-03-17)
 
 ### Deliverable: An integration test that runs the CLI binary via `npm exec` to verify the bin wiring works end-to-end
 
