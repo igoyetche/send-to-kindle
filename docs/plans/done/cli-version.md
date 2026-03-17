@@ -428,7 +428,7 @@ npx vitest run test/integration/cli-binary.test.ts
 
 ---
 
-## Task 8: Update specs and docs for CLI and rename `[ ]`
+## Task 8: Update specs and docs for CLI and rename `[x]` (2026-03-17)
 
 ### Deliverable: Updated main spec, STATUS.md, CHANGELOG.md, and CLAUDE.md reflecting the CLI addition and paperboy rename
 

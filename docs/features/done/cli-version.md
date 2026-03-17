@@ -1,8 +1,8 @@
 # Feature: CLI Version + Claude Code Skill
 
-> Status: Backlog
+> Status: Done
 > Created: 2026-03-05
-> Completed: —
+> Completed: 2026-03-17
 
 ## Problem
 

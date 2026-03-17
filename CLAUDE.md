@@ -1,6 +1,6 @@
-# Send to Kindle MCP Server
+# Paperboy — Send to Kindle
 
-A single-user MCP server that lets Claude send Markdown content to a Kindle device in one step—no manual formatting, no copy-paste. The system converts Markdown to EPUB and emails it to your configured Kindle address.
+A single-user tool that sends Markdown content to a Kindle device in one step—no manual formatting, no copy-paste. The system converts Markdown to EPUB and emails it to your configured Kindle address. Available as both an MCP server and a CLI tool (`paperboy`).
 
 ---
 
@@ -103,13 +103,15 @@ Features, plans, and designs have explicit **status folders**. Move files betwee
 
 ## ✅ Implementation Status
 
-**COMPLETE** — All 16 tasks implemented with 55 passing tests and strict TypeScript compilation.
+**COMPLETE** — All 24 tasks implemented with 149 passing tests and strict TypeScript compilation.
 
 - ✅ Domain layer: value objects, service, error types, port interfaces
-- ✅ Infrastructure layer: config loading, logger, EPUB converter, SMTP mailer
-- ✅ Application layer: MCP tool handler, composition root
+- ✅ Infrastructure layer: config loading, logger, EPUB converter, SMTP mailer, CLI content reader
+- ✅ Application layer: MCP tool handler, CLI adapter, composition roots (MCP + CLI)
 - ✅ Deployment: multi-stage Dockerfile, docker-compose.yml
-- ✅ Testing: 55 tests across 11 test files, 100% passing
+- ✅ CLI: `paperboy` command with arg parsing, exit codes, dual dotenv loading
+- ✅ Claude Code skill: `.claude/skills/paperboy/SKILL.md`
+- ✅ Testing: 149 tests across 17 test files, 100% passing
 - ✅ TypeScript: strict mode, no `any`, no assertions
 
 **Git commits:** All tasks committed with descriptive messages. Ready for production deployment.
@@ -118,15 +120,20 @@ Features, plans, and designs have explicit **status folders**. Move files betwee
 
 **Purpose:** Enable Claude to deliver generated content (summaries, articles, research notes) directly to a Kindle device.
 
-**Core workflow:** User asks Claude → Claude generates Markdown → Claude invokes `send_to_kindle` tool → system converts to EPUB and sends via email → document appears in Kindle library.
+**Two distribution paths:**
+1. **MCP Server** — Claude invokes `send_to_kindle` tool via MCP protocol (stdio or HTTP/SSE)
+2. **CLI** — `paperboy --title "Title" --file notes.md` from the terminal or via Claude Code skill
+
+**Core workflow:** Content (Markdown) → EPUB conversion → email delivery → document appears in Kindle library.
 
 **Key constraints:**
 - Single-user personal tool (no multi-tenant)
 - Markdown input only → EPUB output only
-- Support local (stdio) and remote (HTTP/SSE) MCP transports
+- MCP: local (stdio) and remote (HTTP/SSE) transports
+- CLI: file input, stdin piping, dual dotenv resolution
 - Containerized, runs on x86_64 and ARM64
 
-See `docs/specs/main-spec.md` for full requirements. See `docs/design/main/adr.md` for architecture decisions. See `docs/STATUS.md` for project status and `docs/CHANGELOG.md` for decision log.
+See `docs/specs/main-spec.md` for full requirements. See `docs/design/main/adr.md` for architecture decisions. See `docs/designs/cli-version/adr.md` for CLI design decisions. See `docs/STATUS.md` for project status and `docs/CHANGELOG.md` for decision log.
 
 ## Architecture
 
@@ -148,9 +155,11 @@ Application Layer  →  Domain Layer  ←  Infrastructure Layer
 
 **Application Layer:**
 - `ToolHandler`: MCP adapter, tool registration, error mapping
-- Transport: stdio (default) + HTTP/SSE (when `MCP_HTTP_PORT` is set)
+- `cli.ts`: CLI adapter — argument parsing, exit code mapping, orchestration
+- MCP Transport: stdio (default) + HTTP/SSE (when `MCP_HTTP_PORT` is set)
+- CLI Transport: `cli-entry.ts` composition root with dual dotenv loading
 
-See `docs/design/main/adr.md` for full design rationale.
+See `docs/design/main/adr.md` for MCP design rationale. See `docs/designs/cli-version/adr.md` for CLI design rationale.
 
 ## Project Structure
 
@@ -164,11 +173,14 @@ src/
   infrastructure/
     converter/       # EPUB generation (markdown-epub-converter.ts)
     mailer/          # Email delivery (smtp-mailer.ts)
+    cli/             # CLI content reading (content-reader.ts)
     config.ts        # Configuration loading & validation
     logger.ts        # Structured logging
   application/
     tool-handler.ts  # MCP tool adapter
-  index.ts           # Composition root, transports
+    cli.ts           # CLI adapter (arg parsing, exit codes, orchestration)
+  index.ts           # MCP composition root, transports
+  cli-entry.ts       # CLI composition root, dotenv loading
 Dockerfile           # Multi-stage build, Node 22 Alpine
 docker-compose.yml
 .env.example
@@ -195,7 +207,7 @@ cp .env.example .env
 Required environment variables (see `.env.example`):
 
 ```
-KINDLE_EMAIL=your-kindle-email@kindle.com
+KINDLE_DEVICES=personal:user@kindle.com
 SENDER_EMAIL=approved-sender@gmail.com
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
@@ -228,6 +240,12 @@ npm run dev
 
 The server listens on `http://localhost:3000` and requires Bearer token authentication.
 
+### Run CLI locally
+
+```bash
+npm run cli -- --title "Test" --file test.md
+```
+
 ### Build for production
 
 ```bash
@@ -240,13 +258,13 @@ Compiles TypeScript to `dist/` directory.
 
 ```bash
 # Build
-docker build -t send-to-kindle-mcp .
+docker build -t paperboy .
 
 # Run with stdio (local)
-docker run -i --env-file .env send-to-kindle-mcp
+docker run -i --env-file .env paperboy
 
 # Run with HTTP/SSE (remote)
-docker run -p 3000:3000 --env-file .env send-to-kindle-mcp
+docker run -p 3000:3000 --env-file .env paperboy
 ```
 
 ## Design Principles
@@ -645,7 +663,7 @@ describe("Title", () => {
 ```
 
 **Test Summary:**
-- 55 tests across 11 test files
+- 149 tests across 17 test files
 - Vitest for fast, isolated test execution
 - Mocks only infrastructure ports, never domain objects
 - Error paths tested exhaustively
@@ -666,16 +684,21 @@ Comprehensive test coverage across all layers:
 - Error types and Result helpers
 - SendToKindleService orchestration logic
 
-**Infrastructure Layer (27 tests)**
+**Infrastructure Layer (39 tests)**
 - Configuration loading and validation
 - Logger integration
 - MarkdownEpubConverter pipeline (Markdown → HTML → EPUB → Buffer)
 - SmtpMailer error categorization and email delivery
+- CLI content reader: file reading with size guard, stdin with timeout
 
-**Application Layer (8 tests)**
-- ToolHandler error mapping and MCP integration
-- Author default resolution
-- Success/failure response formatting
+**Application Layer (55 tests)**
+- ToolHandler error mapping and MCP integration (8 tests)
+- CLI adapter: parseArgs, resolveContentSource, mapErrorToExitCode, formatSuccess, formatError, run (47 tests)
+
+**Integration (3 tests)**
+- CLI binary wiring: --help, --version, config error exit codes
+
+**Integration tests require `npm run build` before running.**
 
 **Test Infrastructure:**
 - Vitest for fast, isolated execution
@@ -703,28 +726,35 @@ npm run test:watch   # Watch mode for development
    - Pino-based logger implementing DeliveryLogger port
    - Markdown-to-EPUB converter with HTML sanitization
    - SMTP mailer with error categorization and retry logic
+   - CLI content reader (file with size guard, stdin with timeout)
 
-3. ✅ **Application Layer** — MCP integration
-   - ToolHandler for tool registration and error mapping
-   - Composition root wiring all dependencies
-   - Stdio transport (local CLI) + HTTP/SSE transport (remote with auth)
+3. ✅ **Application Layer** — MCP + CLI integration
+   - ToolHandler for MCP tool registration and error mapping
+   - CLI adapter for argument parsing, exit code mapping, and orchestration
+   - MCP composition root (`index.ts`) with stdio + HTTP/SSE transports
+   - CLI composition root (`cli-entry.ts`) with dual dotenv loading
 
 4. ✅ **Deployment** — Production ready
    - Multi-stage Dockerfile (Alpine base, minimal size)
    - docker-compose.yml with environment file support
    - Typed environment configuration
+   - npm bin field for `paperboy` CLI command
+
+5. ✅ **Claude Code Integration**
+   - Skill file at `.claude/skills/paperboy/SKILL.md`
 
 ### Key Features
 - **Type Safety:** Strict TypeScript, no `any`, no assertions
 - **Error Handling:** Result types for compile-time exhaustiveness
 - **Validation:** Fail-fast at startup, validated inputs
-- **Logging:** Structured JSON logging with pino
+- **Logging:** Structured JSON logging with pino (silent in CLI mode)
 - **Security:** XSS sanitization, credential isolation
-- **Testing:** 55 tests, 100% passing
+- **Dual Distribution:** MCP server + CLI (`paperboy`) from shared domain/infra
+- **Testing:** 149 tests, 100% passing
 
 ## Notes
 
 - **Learning MVP** — Focus on clear, simple code over premature optimization
 - **Production ready** — Tested, typed, containerized, documented
-- **Future extensions** — Architecture supports: preview mode, multiple Kindle addresses, delivery confirmation, custom stylesheet injection
+- **Future extensions** — Architecture supports: preview mode, delivery confirmation, custom stylesheet injection, URL-to-Kindle, structured output (--json)
 - **.gitignore** — Already configured to exclude `node_modules/`, `dist/`, `.env`, `*.tsbuildinfo`

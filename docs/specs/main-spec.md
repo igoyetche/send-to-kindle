@@ -1,6 +1,6 @@
-# Send to Kindle MCP Server — System Spec
+# Paperboy — System Spec
 
-> Last updated: 2026-03-05
+> Last updated: 2026-03-17
 > Status: Implemented
 
 ## 1. Problem Statement
@@ -129,14 +129,81 @@ A user working with an AI assistant (Claude) frequently generates long-form cont
 4. The system authenticates the request, processes the content, and delivers the email
 5. The system returns a success response over the HTTP/SSE connection
 
-## 8. Open Questions
+## 8. CLI Distribution
+
+> Updated 2026-03-17 via feature: CLI Version + Claude Code Skill
+
+The system provides a CLI entry point (`paperboy`) as an alternative to the MCP server, enabling terminal-based usage and Claude Code skill invocation.
+
+### CLI Interface
+
+```bash
+paperboy --title <title> [--file <path>] [--author <name>] [--device <name>]
+paperboy --help
+paperboy --version
+echo "# Content" | paperboy --title <title>
+```
+
+### CLI Flags
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--title <title>` | Yes | Title of the document sent to Kindle |
+| `--file <path>` | No | Path to a Markdown file; reads from stdin if omitted |
+| `--author <name>` | No | Author name embedded in the EPUB (default: configured value) |
+| `--device <name>` | No | Target Kindle device name (default: first configured device) |
+| `--help` | No | Show usage text and exit |
+| `--version` | No | Show version number and exit |
+
+### CLI Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| 0 | Document sent successfully |
+| 1 | Validation error (missing title, empty content, size limit) |
+| 2 | EPUB conversion error |
+| 3 | Email delivery error (SMTP auth, connection, rejection) |
+| 4 | Configuration error (missing or invalid environment variables) |
+
+### CLI Configuration Resolution
+
+The CLI loads environment variables in the following order (first match wins):
+
+1. Shell environment variables (always take precedence)
+2. `.env` file in the current working directory
+3. `~/.paperboy/.env` fallback for global user configuration
+
+`--help` and `--version` flags work without any configuration.
+
+### Content Source Resolution
+
+1. If `--file <path>` is provided → read from file (rejects files > 25 MB)
+2. If no `--file` and stdin is piped (`!process.stdin.isTTY`) → read from stdin (30-second timeout)
+3. If no `--file` and stdin is a terminal → error with guidance
+
+### Claude Code Skill
+
+A skill file at `.claude/skills/paperboy/SKILL.md` teaches Claude Code how to invoke the CLI for send-to-Kindle workflows. The skill documents only implemented flags and capabilities.
+
+### Package Distribution
+
+```json
+{
+  "name": "paperboy",
+  "bin": { "paperboy": "./dist/cli-entry.js" }
+}
+```
+
+Install globally (`npm install -g paperboy`) or run via `npx paperboy`.
+
+## 9. Open Questions (Archived)
 
 - **OQ-1**: What happens when Amazon rejects or bounces the email (e.g., sender not approved)? Bounce detection is asynchronous and may not be capturable at send time. Should the system attempt any verification, or accept "email dispatched" as success?
 - **OQ-3**: For remote access (HTTP/SSE), what authentication mechanism is appropriate? Token-based, mutual TLS, or reliance on a VPN/tunnel (e.g., Tailscale)?
 - **OQ-4**: Should there be a `preview_document` capability that returns the converted document content without sending it, so the user can review before delivery?
 - **OQ-5**: Should the system support sending to multiple Kindle addresses (e.g., personal and family devices), or is single-device sufficient for v1?
 
-## 9. Success Criteria
+## 10. Success Criteria
 
 - **SC-1**: A user can ask Claude to send content to their Kindle, and the document appears in the Kindle library with the correct title and readable formatting — with no manual steps after the conversation
 - **SC-2**: The tool works reliably for documents of typical length (up to ~50,000 words / ~300 KB) producing valid EPUB output
@@ -144,7 +211,7 @@ A user working with an AI assistant (Claude) frequently generates long-form cont
 - **SC-4**: The system is operational via remote HTTP/SSE transport for access from outside the local machine
 - **SC-5**: Structured error responses provide enough information for Claude to give the user actionable guidance when delivery fails
 
-## 10. Context and References
+## 11. Context and References
 
 - [Amazon Send to Kindle documentation](https://www.amazon.com/sendtokindle) — supported formats, email setup, approved sender list
 - [Model Context Protocol specification](https://modelcontextprotocol.io/) — MCP tool definition, stdio and HTTP/SSE transport specs
