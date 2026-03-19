@@ -1,7 +1,7 @@
 # Project Status Dashboard
 
 > Last updated: 2026-03-17
-> Last ticket code: PB-006
+> Last ticket code: PB-007
 
 ## Active Work
 
@@ -15,6 +15,7 @@
 |------|---------|-------|---|---|---|
 | PB-005 | URL to Kindle | Design | specs/main-spec.md | — | High |
 | PB-006 | Trusted HTTPS Certificate | Design | specs/main-spec.md | — | Medium |
+| PB-007 | Interactive Setup Wizard | Feature | specs/main-spec.md | — | High |
 
 ## Completed
 

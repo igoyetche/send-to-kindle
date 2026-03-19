@@ -7,6 +7,20 @@ description: Send markdown content to a Kindle device as an EPUB via the paperbo
 
 Use the `paperboy` CLI to convert Markdown content to EPUB and deliver it to a Kindle device via email.
 
+### Before first use
+
+Check if paperboy is installed. If not, install it globally:
+
+```bash
+which paperboy
+```
+
+If the command is not found:
+
+```bash
+npm install -g @your-username/paperboy
+```
+
 ### Send from a file
 
 ```bash
@@ -24,6 +38,14 @@ cat <<'CONTENT' > /tmp/kindle-doc.md
 Your markdown content here...
 CONTENT
 paperboy --title "Document Title" --file /tmp/kindle-doc.md
+```
+
+### Alternative: run without installing
+
+If you prefer not to install globally, use `npx` (downloads on first use, then caches):
+
+```bash
+npx @your-username/paperboy --title "Document Title" --file path/to/document.md
 ```
 
 ### Options
