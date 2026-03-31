@@ -2,6 +2,7 @@ import { basename } from "node:path";
 import type { SendToKindleService } from "../domain/send-to-kindle-service.js";
 import type { DeviceRegistry } from "../domain/device-registry.js";
 import type { Author } from "../domain/values/author.js";
+import type { DeliveryError } from "../domain/errors.js";
 import { MarkdownContent } from "../domain/values/markdown-content.js";
 import { extractTitle } from "../domain/title-extractor.js";
 
@@ -33,7 +34,7 @@ export interface WatcherDeps {
 const MAX_RETRIES = 3;
 const BASE_DELAY_MS = 2000;
 
-function isTransient(cause: string): boolean {
+function isTransient(cause: DeliveryError["cause"]): boolean {
   return cause === "connection";
 }
 
@@ -181,7 +182,9 @@ export async function startWatcher(deps: StartWatcherDeps): Promise<WatcherHandl
     ...deps,
     moveToSent: async (filePath: string) => {
       try {
-        return await deps.moveToSent(filePath);
+        const result = await deps.moveToSent(filePath);
+        sentPaths.add(filePath);
+        return result;
       } catch (e: unknown) {
         sentPaths.add(filePath);
         const msg = e instanceof Error ? e.message : "unknown";
@@ -191,7 +194,9 @@ export async function startWatcher(deps: StartWatcherDeps): Promise<WatcherHandl
     },
     moveToError: async (filePath: string, errorKind: string, errorMessage: string) => {
       try {
-        return await deps.moveToError(filePath, errorKind, errorMessage);
+        const result = await deps.moveToError(filePath, errorKind, errorMessage);
+        sentPaths.add(filePath);
+        return result;
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "unknown";
         deps.logger.warn(`Could not move ${basename(filePath)} to error/: ${msg}`);

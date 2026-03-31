@@ -7,7 +7,6 @@
 
 | Code | Feature | Phase | Specs Affected | Plan | Status |
 |------|---------|-------|---|---|---|
-| PB-009 | Watch Folder | Phase 1 | specs/main-spec.md | plans/active/PB-009-watch-folder.md | 🔄 In Progress |
 
 ## Backlog
 
@@ -23,6 +22,7 @@
 
 | Code | Feature | Specs Affected | Completed | Plan Archive |
 |------|---------|---|---|---|
+| PB-009 | Watch Folder | specs/main-spec.md | 2026-03-31 | plans/done/PB-009-2026-03-31-watch-folder.md |
 | PB-005 | URL to Kindle | — | Dropped 2026-03-31 | plans/done/PB-005-2026-03-31-url-to-kindle-dropped.md |
 | PB-004 | CLI Version + Claude Code Skill | specs/main-spec.md | 2026-03-17 | plans/done/PB-004-2026-03-17-cli-version.md |
 | PB-003 | Multiple Kindle Addresses | specs/main-spec.md | 2026-03-05 | plans/done/PB-003-2026-03-05-multiple-kindle-addresses.md |
