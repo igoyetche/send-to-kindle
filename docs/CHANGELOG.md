@@ -6,8 +6,8 @@ Tracks every change to specs, designs, and plans that deviates from the original
 
 ## 2026-03-31 — PB-009 Watch Folder (Phase 1)
 
-### Feature In Progress
-- **Watch Folder**: Added `paperboy watch` foreground watcher that monitors a configured folder for `.md` files, converts them to EPUB, and sends them to Kindle automatically. Includes retry logic for transient SMTP failures, graceful shutdown, and OS service template configs.
+### Feature Complete
+- **Watch Folder**: `paperboy watch` foreground watcher — monitors a configured folder for `.md` files, converts each to EPUB, and sends to Kindle automatically. Retry logic for transient SMTP failures (3x exponential backoff), graceful shutdown, duplicate processing prevention, and OS service template configs. 190 tests, all passing.
 
 ### Spec Changes
 - **specs/main-spec.md**: Added Watch Folder section documenting `WATCH_FOLDER` env var and `paperboy watch` command.
