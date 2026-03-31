@@ -1,7 +1,7 @@
 # Project Status Dashboard
 
 > Last updated: 2026-03-31
-> Last ticket code: PB-008
+> Last ticket code: PB-010
 
 ## Active Work
 
@@ -11,6 +11,8 @@ _None_
 
 | Code | Feature | Phase | Specs Affected | Plan | Priority |
 |------|---------|-------|---|---|---|
+| PB-010 | Safe npm Packages | Feature | — | — | High |
+| PB-009 | Encrypted Configuration Storage | Feature | specs/main-spec.md | — | High |
 | PB-006 | Trusted HTTPS Certificate | Design | specs/main-spec.md | — | Medium |
 | PB-007 | Interactive Setup Wizard | Feature | specs/main-spec.md | — | High |
 | PB-008 | EPUB Cover Generation | Feature | specs/main-spec.md | — | Medium |
