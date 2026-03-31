@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Paperboy Watcher — macOS launchd config
+
+  HOW TO USE:
+  1. Replace /path/to/node with your Node.js path (run: which node)
+  2. Replace /path/to/watch-entry.js with the full path to dist/watch-entry.js
+  3. Copy to ~/Library/LaunchAgents/ and load:
+     cp com.paperboy.watcher.plist ~/Library/LaunchAgents/
+     launchctl load ~/Library/LaunchAgents/com.paperboy.watcher.plist
+
+  To unload:
+     launchctl unload ~/Library/LaunchAgents/com.paperboy.watcher.plist
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.paperboy.watcher</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/path/to/node</string>
+    <string>/path/to/watch-entry.js</string>
+  </array>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>KeepAlive</key>
+  <true/>
+
+  <key>StandardOutPath</key>
+  <string>~/Library/Logs/paperboy-watcher.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>~/Library/Logs/paperboy-watcher.log</string>
+</dict>
+</plist>
