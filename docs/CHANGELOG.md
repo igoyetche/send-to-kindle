@@ -4,6 +4,37 @@ Tracks every change to specs, designs, and plans that deviates from the original
 
 ---
 
+## 2026-03-31 — PB-009 Watch Folder (Phase 1)
+
+### Feature In Progress
+- **Watch Folder**: Added `paperboy watch` foreground watcher that monitors a configured folder for `.md` files, converts them to EPUB, and sends them to Kindle automatically. Includes retry logic for transient SMTP failures, graceful shutdown, and OS service template configs.
+
+### Spec Changes
+- **specs/main-spec.md**: Added Watch Folder section documenting `WATCH_FOLDER` env var and `paperboy watch` command.
+- **infrastructure/config.ts**: Added optional `watchFolder` to `Config` interface.
+
+### New Modules
+- `src/domain/title-extractor.ts` — Extract title from first H1 in markdown, fallback to filename
+- `src/application/watcher.ts` — Watcher orchestrator with retry logic, queue, and graceful shutdown
+- `src/infrastructure/watcher/folder-watcher.ts` — Chokidar wrapper with injected watch function
+- `src/infrastructure/watcher/file-mover.ts` — Move files to sent/error with deduplication
+- `src/watch-entry.ts` — Watcher composition root (dotenv, config, wire deps)
+- `scripts/service-templates/` — OS service templates for Windows, macOS, Linux
+
+### Modified Modules
+- `src/cli-entry.ts` — Added `watch` subcommand routing before `--help`/`--version`
+- `src/infrastructure/config.ts` — Added `watchFolder?: string` to Config
+
+### Design Decisions
+- Phase 1 ships foreground watcher + template configs; Phase 2 will automate service install
+- Subcommand routing in cli-entry.ts (check argv[0] before --help/--version)
+- chokidar v4 with `awaitWriteFinish` for cross-platform file watching
+- Sequential processing (one file at a time) with in-memory queue
+- Transient SMTP failures (cause === "connection") retry 3x with exponential backoff (2s, 4s, 8s)
+- Sent-but-not-moved files tracked in memory Set to prevent re-processing
+
+---
+
 ## 2026-03-31 — Remove Claude Code Skill approach
 
 ### ADR

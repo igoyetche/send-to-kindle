@@ -1,6 +1,6 @@
 # Paperboy — System Spec
 
-> Last updated: 2026-03-26
+> Last updated: 2026-03-31
 > Status: Implemented
 
 ## 1. Problem Statement
@@ -191,6 +191,54 @@ The CLI loads environment variables in the following order (first match wins):
 ```
 
 Install globally (`npm install -g paperboy`) or run via `npx paperboy`.
+
+### Watch Folder
+
+> Updated 2026-03-31 via feature: PB-009
+
+The `paperboy watch` command starts a foreground watcher that monitors a configured folder for `.md` files, converts each to EPUB, and sends it to Kindle automatically.
+
+```bash
+paperboy watch          # start the watcher
+paperboy watch --help   # show watcher usage
+```
+
+**Configuration:**
+
+```
+WATCH_FOLDER=/path/to/kindle-inbox
+```
+
+Added to the existing `.env` configuration. Optional — only required when using `paperboy watch`. MCP and CLI entry points ignore it.
+
+**Folder structure (managed by the watcher):**
+
+```
+/path/to/kindle-inbox/       # user drops .md files here
+  sent/                      # auto-created, successful deliveries moved here
+  error/                     # auto-created, failed deliveries + .error.txt
+```
+
+**Processing pipeline:**
+1. New `.md` file detected (chokidar with `awaitWriteFinish`)
+2. Read file, extract title from first H1 (fall back to filename)
+3. Create value objects, call `SendToKindleService.execute()`
+4. On success: move to `sent/`
+5. On transient SMTP failure: retry up to 3x with exponential backoff (2s, 4s, 8s)
+6. On permanent failure or retries exhausted: move to `error/` + write `.error.txt`
+
+**Error file format** (`error/<name>.error.txt`):
+```
+Timestamp: 2026-03-31T14:30:00.000Z
+Error: delivery
+Message: SMTP connection timed out after 3 retries
+```
+
+**Startup behaviour:** Scans inbox for existing `.md` files and processes them.
+
+**Graceful shutdown:** Listens for SIGINT/SIGTERM, waits for current file to complete.
+
+**OS service registration (Phase 1):** Template configs in `scripts/service-templates/` with documented install one-liners per OS (Windows Task Scheduler, macOS launchd, Linux systemd).
 
 ## 9. Open Questions (Archived)
 

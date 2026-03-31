@@ -5,7 +5,9 @@
 
 ## Active Work
 
-_None_
+| Code | Feature | Phase | Specs Affected | Plan | Status |
+|------|---------|-------|---|---|---|
+| PB-009 | Watch Folder | Phase 1 | specs/main-spec.md | plans/active/PB-009-watch-folder.md | 🔄 In Progress |
 
 ## Backlog
 
