@@ -16,6 +16,7 @@
     "test:email": "tsx scripts/test-email.ts",
     "lint": "eslint src test",
     "lint:fix": "eslint --fix src test",
+    "audit:ci": "npm audit --audit-level=high",
     "prepare": "husky"
   },
   "lint-staged": {
@@ -31,14 +32,14 @@
     "epub-gen-memory": "^1.1.2",
     "express": "^5.1.0",
     "marked": "^17.0.3",
-    "nodemailer": "^6.10.1",
+    "nodemailer": "^8.0.4",
     "pino": "^9.6.0",
     "sanitize-html": "^2.14.0",
     "zod": "^3.24.2"
   },
   "devDependencies": {
     "@types/express": "^5.0.0",
-    "@types/nodemailer": "^6.4.17",
+    "@types/nodemailer": "^7.0.0",
     "@types/sanitize-html": "^2.13.0",
     "@vitest/coverage-v8": "^3.2.4",
     "eslint": "^10.1.0",

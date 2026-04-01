@@ -1,7 +1,8 @@
 # PB-010: Safe npm Packages
 
-**Status:** Backlog
+**Status:** Complete
 **Date:** 2026-03-31
+**Completed:** 2026-04-01
 
 ## Motivation
 
@@ -15,10 +16,10 @@ Add `npm audit --audit-level=high` enforcement at two points:
 
 ## Acceptance Criteria
 
-- [ ] `npm run audit:ci` script exists and exits non-zero when high/critical vulnerabilities are present
-- [ ] Pre-commit hook runs `npm run audit:ci` and blocks commits on failure
-- [ ] GitHub Actions CI workflow runs `npm run audit:ci` and blocks merges on failure
-- [ ] Remediation path is documented (what to do when audit fails)
+- [x] `npm run audit:ci` script exists and exits non-zero when high/critical vulnerabilities are present
+- [x] Pre-commit hook runs `npm run audit:ci` and blocks commits on failure
+- [x] GitHub Actions CI workflow runs `npm run audit:ci` and blocks merges on failure
+- [x] Remediation path is documented (what to do when audit fails)
 
 ## Out of Scope
 

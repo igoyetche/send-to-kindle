@@ -1,3 +1,4 @@
 #!/usr/bin/env sh
 npm exec lint-staged
 npm test
+npm run audit:ci

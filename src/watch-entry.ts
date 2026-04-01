@@ -143,7 +143,7 @@ try {
     createWatcher: (opts) => createFolderWatcher({
       inboxPath: opts.inboxPath,
       onFile: opts.onFile,
-      watch: (path, options) => watch(path, options),
+      watch,
     }),
   });
 

@@ -4,6 +4,12 @@ Tracks every change to specs, designs, and plans that deviates from the original
 
 ---
 
+## 2026-04-01 — PB-010 Complete: Safe npm Packages
+
+**Summary:** Implemented npm audit enforcement across pre-commit hook and GitHub Actions CI workflow. All acceptance criteria met. No spec changes required.
+
+---
+
 ## 2026-03-31 — PB-009 Watch Folder (Phase 1)
 
 ### Feature Complete
@@ -32,6 +38,14 @@ Tracks every change to specs, designs, and plans that deviates from the original
 - Sequential processing (one file at a time) with in-memory queue
 - Transient SMTP failures (cause === "connection") retry 3x with exponential backoff (2s, 4s, 8s)
 - Sent-but-not-moved files tracked in memory Set to prevent re-processing
+
+---
+
+## 2026-03-31 — nodemailer v6 → v8 upgrade (PB-010)
+
+**Reason:** `npm audit --audit-level=high` found a critical vulnerability in nodemailer v6. Resolved via `npm audit fix --force` which upgraded to v8.0.4.
+
+**Compatibility verified:** `createTransport`, `connectionTimeout`/`socketTimeout` options, and `responseCode` error property are all present and unchanged in nodemailer v8 (confirmed by inspecting `node_modules/nodemailer/lib/smtp-connection/index.js`). Nodemailer v8 does not ship its own TypeScript types, so `@types/nodemailer` remains required. The DefinitelyTyped package was updated from `^6.4.17` to `^7.0.0` (latest: 7.0.11); no v8 variant exists on DefinitelyTyped, and the v7 types cover the full API surface used in `smtp-mailer.ts`.
 
 ---
 
