@@ -4,6 +4,12 @@ Tracks every change to specs, designs, and plans that deviates from the original
 
 ---
 
+## 2026-04-01 — PB-010 Complete: Safe npm Packages
+
+**Summary:** Implemented npm audit enforcement across pre-commit hook and GitHub Actions CI workflow. All acceptance criteria met. No spec changes required.
+
+---
+
 ## 2026-03-31 — nodemailer v6 → v8 upgrade (PB-010)
 
 **Reason:** `npm audit --audit-level=high` found a critical vulnerability in nodemailer v6. Resolved via `npm audit fix --force` which upgraded to v8.0.4.

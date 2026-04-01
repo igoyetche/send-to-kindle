@@ -63,6 +63,21 @@ When ALL tasks are [x] or [-]:
 6. Update `STATUS.md` (mark ✅ Complete)
 7. Add `CHANGELOG.md` entry summarizing the feature completion
 
+### Pre-PR Checklist (BEFORE creating pull request)
+
+**DO NOT create a PR until this checklist is complete. A feature is only done when documentation matches code.**
+
+- [ ] **All tasks marked:** Every task in plan is [x] (done with date) or [-] (dropped with reason)
+- [ ] **Feature file updated:** Feature doc status field set to "Complete" with completion date
+- [ ] **Feature moved:** Feature file moved from `docs/features/active/[name].md` → `docs/features/done/[name]-YYYY-MM-DD-[name].md`
+- [ ] **Plan moved:** Plan file moved from `docs/plans/active/[name].md` → `docs/plans/done/[name]-YYYY-MM-DD-[name].md`
+- [ ] **STATUS.md synced:** Feature removed from "Active Work" section, added to "Completed" section with completion date
+- [ ] **CHANGELOG.md updated:** Feature completion entry added (even if no spec changes)
+- [ ] **Final validation:** Run `npm test` and verify all tests pass with no uncommitted changes
+- [ ] **Ready for PR:** All documentation reflects final state, no outstanding sync tasks
+
+Only after all items are checked off: create the PR.
+
 ### File Movement Rules
 
 Features, plans, and designs have explicit **status folders**. Move files between them as work progresses:

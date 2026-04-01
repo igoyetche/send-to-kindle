@@ -7,7 +7,6 @@
 
 | Code | Feature | Phase | Specs Affected | Plan | Status |
 |------|---------|-------|---|---|---|
-| PB-010 | Safe npm Packages | 🔄 In Progress | — | plans/active/PB-010-safe-packages.md | High |
 
 ## Backlog
 
@@ -22,6 +21,7 @@
 
 | Code | Feature | Specs Affected | Completed | Plan Archive |
 |------|---------|---|---|---|
+| PB-010 | Safe npm Packages | — | 2026-04-01 | plans/done/PB-010-2026-04-01-safe-packages.md |
 | PB-005 | URL to Kindle | — | Dropped 2026-03-31 | plans/done/PB-005-2026-03-31-url-to-kindle-dropped.md |
 | PB-004 | CLI Version + Claude Code Skill | specs/main-spec.md | 2026-03-17 | plans/done/PB-004-2026-03-17-cli-version.md |
 | PB-003 | Multiple Kindle Addresses | specs/main-spec.md | 2026-03-05 | plans/done/PB-003-2026-03-05-multiple-kindle-addresses.md |
