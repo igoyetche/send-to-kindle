@@ -113,6 +113,7 @@ Features, plans, and designs have explicit **status folders**. Move files betwee
 8. Features and plans have lifecycles: backlog → active → done (use file movement to track)
 9. Designs stay in place and get updated during implementation (don't archive)
 10. If validation reveals spec/design errors, update upstream docs BEFORE continuing
+11. **Never create or open a PR without asking first** — even for completed features or adjustments
 
 ---
 
