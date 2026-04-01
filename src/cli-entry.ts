@@ -42,8 +42,6 @@ if (rawArgs[0] === "watch") {
   const [node, script] = process.argv;
   process.argv = [node ?? "node", script ?? "paperboy", ...rawArgs.slice(1)];
   await import("./watch-entry.js");
-  // watch-entry calls process.exit() in all code paths
-  process.exit(0);
 }
 
 if (rawArgs.includes("--help")) {
