@@ -9,7 +9,7 @@ Send Markdown content to your Kindle as an EPUB — from the terminal, from Clau
 3. The EPUB is emailed to your Kindle address
 4. The document appears in your Kindle library
 
-## Two Ways to Use It
+## Three Ways to Use It
 
 ### CLI
 
@@ -22,6 +22,14 @@ cat article.md | paperboy --title "My Article"
 
 # With options
 paperboy --title "Notes" --file notes.md --author "Alice" --device "Alice's Kindle"
+```
+
+### Folder Watcher
+
+Drop `.md` files into a watched folder — Paperboy converts and sends them automatically.
+
+```bash
+paperboy watch
 ```
 
 ### MCP Server
