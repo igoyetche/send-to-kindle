@@ -3,8 +3,10 @@ import type { SendToKindleService } from "../domain/send-to-kindle-service.js";
 import type { DeviceRegistry } from "../domain/device-registry.js";
 import type { Author } from "../domain/values/author.js";
 import type { DeliveryError } from "../domain/errors.js";
-import { MarkdownContent } from "../domain/values/markdown-content.js";
-import { extractTitle } from "../domain/title-extractor.js";
+import type { FrontmatterParser } from "../domain/ports.js";
+import { MarkdownContent, MarkdownDocument } from "../domain/values/index.js";
+import { resolveTitle } from "../domain/title-resolver.js";
+import { findFirstH1 } from "../domain/find-first-h1.js";
 
 /**
  * Logger interface for the watcher orchestrator.
@@ -24,6 +26,7 @@ export interface WatcherDeps {
   service: Pick<SendToKindleService, "execute">;
   devices: DeviceRegistry;
   defaultAuthor: Author;
+  frontmatterParser: FrontmatterParser;
   watchFolder: string;
   readFile: (path: string) => Promise<string>;
   moveToSent: (filePath: string) => Promise<string>;
@@ -60,9 +63,9 @@ export async function processFile(
   const filename = basename(filePath);
 
   // Step 1: Read file
-  let content: string;
+  let rawContent: string;
   try {
-    content = await deps.readFile(filePath);
+    rawContent = await deps.readFile(filePath);
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "Unknown read error";
     deps.logger.warn(`Could not read ${filename}: ${message}`);
@@ -70,29 +73,43 @@ export async function processFile(
   }
 
   // Step 2: Validate not empty
-  if (content.length === 0) {
+  if (rawContent.length === 0) {
     deps.logger.error(`File ${filename} is empty`);
     await deps.moveToError(filePath, "validation", `File '${filename}' is empty`);
     return;
   }
 
-  // Step 3: Create MarkdownContent (validates size)
-  const contentResult = MarkdownContent.create(content);
+  // Step 3: Parse frontmatter
+  const parseResult = deps.frontmatterParser.parse(rawContent);
+  if (!parseResult.ok) {
+    deps.logger.error(`File ${filename}: ${parseResult.error.message}`);
+    await deps.moveToError(filePath, "frontmatter", parseResult.error.message);
+    return;
+  }
+  const { metadata, body } = parseResult.value;
+
+  // Step 4: Create MarkdownContent from stripped body (validates size)
+  const contentResult = MarkdownContent.create(body);
   if (!contentResult.ok) {
     deps.logger.error(`File ${filename}: ${contentResult.error.message}`);
     await deps.moveToError(filePath, contentResult.error.kind, contentResult.error.message);
     return;
   }
 
-  // Step 4: Extract title from H1 or filename fallback
-  const titleResult = extractTitle(content, filename);
+  // Step 5: Resolve title from multiple sources
+  // Priority: frontmatter title → H1 from body → filename stem
+  const h1Text = findFirstH1(body);
+  const filenameStem = filename.replace(/\.md$/i, "");
+  const titleCandidates = [metadata.title, h1Text, filenameStem];
+
+  const titleResult = resolveTitle(titleCandidates);
   if (!titleResult.ok) {
-    deps.logger.error(`File ${filename}: title extraction failed — ${titleResult.error.message}`);
+    deps.logger.error(`File ${filename}: title resolution failed — ${titleResult.error.message}`);
     await deps.moveToError(filePath, "validation", titleResult.error.message);
     return;
   }
 
-  // Step 5: Resolve device (use default)
+  // Step 6: Resolve device (use default)
   const deviceResult = deps.devices.resolve();
   if (!deviceResult.ok) {
     deps.logger.error(`No device configured: ${deviceResult.error.message}`);
@@ -100,7 +117,7 @@ export async function processFile(
     return;
   }
 
-  // Step 6: Send with retry for transient failures
+  // Step 7: Send with retry for transient failures
   deps.logger.info(`Processing ${filename}...`);
 
   let lastError: { kind: string; message: string } | undefined;
@@ -112,9 +129,11 @@ export async function processFile(
       await delay(backoff);
     }
 
+    // Build document with actual metadata from frontmatter
+    const document = MarkdownDocument.fromParts(contentResult.value, metadata);
     const result = await deps.service.execute(
       titleResult.value,
-      contentResult.value,
+      document,
       deps.defaultAuthor,
       deviceResult.value,
     );

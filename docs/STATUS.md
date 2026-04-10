@@ -1,11 +1,13 @@
 # Project Status Dashboard
 
-> Last updated: 2026-04-09
-> Last ticket code: PB-017
+> Last updated: 2026-04-10
+> Last ticket code: PB-018
 
 ## Active Work
 
-(None — all assigned work complete)
+| Code | Feature | Phase | Specs Affected | Plan | Priority |
+|------|---------|---|---|---|---|
+| PB-018 | Markdown Frontmatter Metadata | 🔄 In Progress | specs/main-spec.md | plans/active/PB-018-markdown-frontmatter-metadata.md | Medium |
 
 ## Backlog
 

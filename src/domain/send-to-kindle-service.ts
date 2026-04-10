@@ -1,4 +1,4 @@
-import type { Title, Author, MarkdownContent, KindleDevice, ImageStats } from "./values/index.js";
+import type { Title, Author, MarkdownDocument, KindleDevice, ImageStats } from "./values/index.js";
 import type { ContentConverter, DocumentMailer, DeliveryLogger } from "./ports.js";
 import type { DomainError, Result } from "./errors.js";
 import { ok } from "./errors.js";
@@ -20,13 +20,13 @@ export class SendToKindleService {
 
   async execute(
     title: Title,
-    content: MarkdownContent,
+    document: MarkdownDocument,
     author: Author,
     device: KindleDevice,
   ): Promise<Result<DeliverySuccess, DomainError>> {
     this.logger.deliveryAttempt(title.value, "epub", device.name);
 
-    const convertResult = await this.converter.toEpub(title, content, author);
+    const convertResult = await this.converter.toEpub(title, document, author);
     if (!convertResult.ok) {
       this.logger.deliveryFailure(
         title.value,
@@ -37,8 +37,8 @@ export class SendToKindleService {
       return convertResult;
     }
 
-    const document = convertResult.value;
-    const sendResult = await this.mailer.send(document, device);
+    const epubDocument = convertResult.value;
+    const sendResult = await this.mailer.send(epubDocument, device);
     if (!sendResult.ok) {
       this.logger.deliveryFailure(
         title.value,
@@ -49,13 +49,13 @@ export class SendToKindleService {
       return sendResult;
     }
 
-    this.logger.deliverySuccess(title.value, "epub", document.sizeBytes, device.name);
+    this.logger.deliverySuccess(title.value, "epub", epubDocument.sizeBytes, device.name);
 
     return ok({
       title: title.value,
-      sizeBytes: document.sizeBytes,
+      sizeBytes: epubDocument.sizeBytes,
       deviceName: device.name,
-      imageStats: document.imageStats,
+      imageStats: epubDocument.imageStats,
     });
   }
 }

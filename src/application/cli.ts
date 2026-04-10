@@ -12,7 +12,9 @@ import type { Readable } from "node:stream";
 import type { DomainError } from "../domain/errors.js";
 import type { DeliverySuccess, SendToKindleService } from "../domain/send-to-kindle-service.js";
 import type { DeviceRegistry } from "../domain/device-registry.js";
-import { Title, Author, MarkdownContent } from "../domain/values/index.js";
+import { Author, MarkdownContent, MarkdownDocument } from "../domain/values/index.js";
+import type { FrontmatterParser } from "../domain/ports.js";
+import { resolveTitle } from "../domain/title-resolver.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -147,17 +149,10 @@ export function parseArgs(
     };
   }
 
-  if (title === undefined) {
-    return {
-      kind: "parse-error",
-      message:
-        "Missing required flag: --title. Run with --help for usage.",
-    };
-  }
-
+  // Title is now optional and resolved from multiple sources in run()
   return {
     kind: "args",
-    title,
+    title: title ?? "",
     filePath,
     author,
     device,
@@ -212,6 +207,8 @@ export function mapErrorToExitCode(error: DomainError): number {
     case "validation":
       return 1;
     case "size_limit":
+      return 1;
+    case "frontmatter":
       return 1;
     case "conversion":
       return 2;
@@ -280,25 +277,39 @@ export function getUsageText(): string {
 paperboy — Send Markdown content to your Kindle device
 
 USAGE
-  paperboy --title <title> [--file <path>] [options]
-  echo "# Hello" | paperboy --title <title> [options]
+  paperboy [--title <title>] --file <path> [options]
+  paperboy [--title <title>]                     # reads from stdin if piped
 
 FLAGS
-  --title <title>     (required) Title of the document sent to Kindle
+  --title <title>     Title of the document. Overrides frontmatter title when both are present.
+                      If omitted, resolved from: (1) frontmatter title, (2) filename stem (file only),
+                      or (3) hard error if unresolvable.
   --file  <path>      Path to a Markdown file; reads from stdin if omitted
   --author <name>     Author name embedded in the EPUB (default: configured value)
   --device <name>     Target Kindle device name (default: first configured device)
   --help              Show this help text and exit
   --version           Show version number and exit
 
+FRONTMATTER
+  Markdown files may include YAML frontmatter at the top:
+    ---
+    title: My Article
+    url: https://example.com
+    date: 2026-04-10
+    ---
+    # Content starts here
+
+  If 'title' is present in frontmatter and no --title flag is given, it will be used.
+
 EXIT CODES
   0   Success
-  1   Validation or input size error
+  1   Validation error (unresolvable title, empty content, size limit, malformed frontmatter)
   2   EPUB conversion error
   3   Email delivery error
 
 EXAMPLES
   paperboy --title "My Article" --file article.md
+  paperboy --file article.md                      # uses title from article.md or filename
   cat article.md | paperboy --title "My Article"
   paperboy --title "Notes" --file notes.md --author "Alice" --device "Alice's Kindle"
 `.trimStart();
@@ -319,6 +330,7 @@ export interface CliDeps {
   readonly service: Pick<SendToKindleService, "execute">;
   readonly devices: DeviceRegistry;
   readonly defaultAuthor: string;
+  readonly frontmatterParser: FrontmatterParser;
   readonly argv: ReadonlyArray<string>;
   readonly isTTY: boolean;
   readonly readFromFile: (path: string) => Promise<string>;
@@ -376,12 +388,12 @@ export async function run(deps: CliDeps): Promise<number> {
   }
 
   // Step 7: Read content
-  let content: string;
+  let rawContent: string;
   try {
     if (source.kind === "file") {
-      content = await deps.readFromFile(source.path);
+      rawContent = await deps.readFromFile(source.path);
     } else {
-      content = await deps.readFromStdin(deps.stdin);
+      rawContent = await deps.readFromStdin(deps.stdin);
     }
   } catch (e: unknown) {
     const message =
@@ -391,7 +403,7 @@ export async function run(deps: CliDeps): Promise<number> {
   }
 
   // Step 8: Empty content check
-  if (content.length === 0) {
+  if (rawContent.length === 0) {
     const emptyMessage =
       source.kind === "file"
         ? `File '${source.path}' is empty.`
@@ -400,13 +412,38 @@ export async function run(deps: CliDeps): Promise<number> {
     return 1;
   }
 
-  // Step 9: Create value objects
-  const titleResult = Title.create(args.title);
+  // Step 9: Parse frontmatter
+  const parseResult = deps.frontmatterParser.parse(rawContent);
+  if (!parseResult.ok) {
+    deps.stderr(formatError(parseResult.error.message));
+    return mapErrorToExitCode(parseResult.error);
+  }
+  const { metadata, body } = parseResult.value;
+
+  // Step 10: Create MarkdownContent from stripped body
+  const contentResult = MarkdownContent.create(body);
+  if (!contentResult.ok) {
+    deps.stderr(formatError(contentResult.error.message));
+    return mapErrorToExitCode(contentResult.error);
+  }
+
+  // Step 11: Resolve title from multiple sources
+  const titleCandidates =
+    source.kind === "file"
+      ? [
+          args.title || undefined,
+          metadata.title,
+          source.path.replace(/\.md$/i, ""),
+        ]
+      : [args.title || undefined, metadata.title];
+
+  const titleResult = resolveTitle(titleCandidates);
   if (!titleResult.ok) {
     deps.stderr(formatError(titleResult.error.message));
     return mapErrorToExitCode(titleResult.error);
   }
 
+  // Step 12: Create value objects
   const authorRaw = args.author?.trim() ?? deps.defaultAuthor;
   const authorResult = Author.create(authorRaw);
   if (!authorResult.ok) {
@@ -414,23 +451,18 @@ export async function run(deps: CliDeps): Promise<number> {
     return mapErrorToExitCode(authorResult.error);
   }
 
-  const contentResult = MarkdownContent.create(content);
-  if (!contentResult.ok) {
-    deps.stderr(formatError(contentResult.error.message));
-    return mapErrorToExitCode(contentResult.error);
-  }
-
-  // Step 10: Resolve device
+  // Step 13: Resolve device
   const deviceResult = deps.devices.resolve(args.device);
   if (!deviceResult.ok) {
     deps.stderr(formatError(deviceResult.error.message));
     return 1;
   }
 
-  // Step 11 & 12: Execute service
+  // Step 14 & 15: Build document and execute service
+  const document = MarkdownDocument.fromParts(contentResult.value, metadata);
   const result = await deps.service.execute(
     titleResult.value,
-    contentResult.value,
+    document,
     authorResult.value,
     deviceResult.value,
   );

@@ -7,9 +7,11 @@ import {
   DeliveryError,
 } from "../../src/domain/errors.js";
 import type { SendToKindleService } from "../../src/domain/send-to-kindle-service.js";
+import type { FrontmatterParser } from "../../src/domain/ports.js";
 import { DeviceRegistry } from "../../src/domain/device-registry.js";
 import { KindleDevice } from "../../src/domain/values/kindle-device.js";
 import { EmailAddress } from "../../src/domain/values/email-address.js";
+import { DocumentMetadata } from "../../src/domain/values/document-metadata.js";
 
 function makeDevice(name: string, email = "user@kindle.com"): KindleDevice {
   const emailResult = EmailAddress.create(email);
@@ -34,10 +36,22 @@ function fakeService(
   };
 }
 
+function fakeFrontmatterParser(): FrontmatterParser {
+  return {
+    parse: vi.fn((raw: string) => {
+      // Return the raw content as body with empty metadata
+      return ok({
+        metadata: DocumentMetadata.empty(),
+        body: raw,
+      });
+    }),
+  };
+}
+
 describe("ToolHandler", () => {
   it("returns success response including device name on happy path", async () => {
     const service = fakeService(ok({ title: "My Book", sizeBytes: 2048, deviceName: "personal" }));
-    const handler = new ToolHandler(service, "Claude", makeRegistry("personal"));
+    const handler = new ToolHandler(service, "Claude", makeRegistry("personal"), fakeFrontmatterParser());
 
     const response = await handler.handle({ title: "My Book", content: "# Hello" });
 
@@ -51,7 +65,7 @@ describe("ToolHandler", () => {
 
   it("uses default author when not provided", async () => {
     const service = fakeService();
-    const handler = new ToolHandler(service, "DefaultBot", makeRegistry("personal"));
+    const handler = new ToolHandler(service, "DefaultBot", makeRegistry("personal"), fakeFrontmatterParser());
 
     await handler.handle({ title: "Test", content: "# Hi" });
 
@@ -66,7 +80,7 @@ describe("ToolHandler", () => {
   it("resolves the default device when no device arg provided", async () => {
     const service = fakeService();
     const registry = makeRegistry("personal");
-    const handler = new ToolHandler(service, "Claude", registry);
+    const handler = new ToolHandler(service, "Claude", registry, fakeFrontmatterParser());
 
     await handler.handle({ title: "Test", content: "# Hi" });
 
@@ -81,7 +95,7 @@ describe("ToolHandler", () => {
   it("resolves a named device when device arg is provided", async () => {
     const service = fakeService();
     const registry = makeRegistry("personal", "partner");
-    const handler = new ToolHandler(service, "Claude", registry);
+    const handler = new ToolHandler(service, "Claude", registry, fakeFrontmatterParser());
 
     await handler.handle({ title: "Test", content: "# Hi", device: "partner" });
 
@@ -95,7 +109,7 @@ describe("ToolHandler", () => {
 
   it("returns validation error for unknown device name", async () => {
     const service = fakeService();
-    const handler = new ToolHandler(service, "Claude", makeRegistry("personal"));
+    const handler = new ToolHandler(service, "Claude", makeRegistry("personal"), fakeFrontmatterParser());
 
     const response = await handler.handle({ title: "Test", content: "# Hi", device: "ghost" });
 
@@ -107,7 +121,7 @@ describe("ToolHandler", () => {
 
   it("returns validation error for empty title", async () => {
     const service = fakeService();
-    const handler = new ToolHandler(service, "Claude", makeRegistry("personal"));
+    const handler = new ToolHandler(service, "Claude", makeRegistry("personal"), fakeFrontmatterParser());
 
     const response = await handler.handle({ title: "", content: "# Hi" });
 
@@ -118,7 +132,7 @@ describe("ToolHandler", () => {
 
   it("maps ConversionError to CONVERSION_ERROR", async () => {
     const service = fakeService(err(new ConversionError("fail")));
-    const handler = new ToolHandler(service, "Claude", makeRegistry("personal"));
+    const handler = new ToolHandler(service, "Claude", makeRegistry("personal"), fakeFrontmatterParser());
 
     const response = await handler.handle({ title: "Test", content: "# Hi" });
 
@@ -128,7 +142,7 @@ describe("ToolHandler", () => {
 
   it("maps DeliveryError to SMTP_ERROR", async () => {
     const service = fakeService(err(new DeliveryError("auth", "fail")));
-    const handler = new ToolHandler(service, "Claude", makeRegistry("personal"));
+    const handler = new ToolHandler(service, "Claude", makeRegistry("personal"), fakeFrontmatterParser());
 
     const response = await handler.handle({ title: "Test", content: "# Hi" });
 
@@ -138,7 +152,7 @@ describe("ToolHandler", () => {
 
   it("sets isError true on failure responses", async () => {
     const service = fakeService(err(new ConversionError("fail")));
-    const handler = new ToolHandler(service, "Claude", makeRegistry("personal"));
+    const handler = new ToolHandler(service, "Claude", makeRegistry("personal"), fakeFrontmatterParser());
 
     const response = await handler.handle({ title: "Test", content: "# Hi" });
 

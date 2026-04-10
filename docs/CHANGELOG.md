@@ -4,6 +4,21 @@ Tracks every change to specs, designs, and plans that deviates from the original
 
 ---
 
+## 2026-04-10 — PB-018 Spec Update: Markdown Frontmatter Metadata
+
+### Spec Changes (`docs/specs/main-spec.md`)
+
+- **FR-1 updated**: Title is no longer universally required. The system resolves it in priority order: explicit caller-supplied title → frontmatter `title` → filename stem (file-based inputs only). Stdin and MCP have no filename fallback; unresolvable title is a hard error.
+- **FR-15 updated**: Validation now covers "no title resolvable from any source" rather than "missing required title parameter".
+- **FR-17 updated**: The 25 MB size limit applies to the stripped body (after frontmatter removal), not raw file size.
+- **FR-27 added**: System must parse YAML frontmatter, strip it from the body before conversion.
+- **FR-28 added**: Title resolution chain documented per entry point (CLI-file, CLI-stdin, MCP, watcher).
+- **FR-29 added**: Malformed frontmatter must produce a `frontmatter` error (CLI exit 1, MCP `FRONTMATTER_ERROR`), not a silent fallback.
+- **FR-30 added**: `url` and `date` frontmatter fields must survive to the conversion pipeline as document context (not rendered yet; reserved for cover feature).
+- **Section 8 updated**: CLI `--title` flag is now optional; title resolution subsection added; exit code 1 updated to include malformed frontmatter; watcher processing pipeline updated with frontmatter step and revised title resolution order (frontmatter → H1 → filename).
+
+---
+
 ## 2026-04-09 — PB-017 Complete: Kindle EPUB Image File Compatibility
 
 ### Feature Completed

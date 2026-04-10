@@ -7,6 +7,8 @@ import { MarkdownEpubConverter } from "../../src/infrastructure/converter/markdo
 import { Title } from "../../src/domain/values/title.js";
 import { Author } from "../../src/domain/values/author.js";
 import { MarkdownContent } from "../../src/domain/values/markdown-content.js";
+import { MarkdownDocument } from "../../src/domain/values/markdown-document.js";
+import { DocumentMetadata } from "../../src/domain/values/document-metadata.js";
 import type { ImageStats } from "../../src/domain/values/image-stats.js";
 
 /**
@@ -303,9 +305,10 @@ describe("Image downloading with real sample file", () => {
       const converter = new MarkdownEpubConverter(processor);
 
       // Generate EPUB
+      const document = MarkdownDocument.fromParts(contentResult.value, DocumentMetadata.empty());
       const epubResult = await converter.toEpub(
         titleResult.value,
-        contentResult.value,
+        document,
         authorResult.value,
       );
 

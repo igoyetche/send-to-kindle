@@ -9,6 +9,7 @@ import { ImageProcessor } from "./infrastructure/converter/image-processor.js";
 import { SmtpMailer } from "./infrastructure/mailer/smtp-mailer.js";
 import { SendToKindleService } from "./domain/send-to-kindle-service.js";
 import { ToolHandler } from "./application/tool-handler.js";
+import { GrayMatterFrontmatterParser } from "./infrastructure/frontmatter/gray-matter-parser.js";
 
 const config = loadConfig();
 const pinoLogger = createPinoLogger(config.logLevel);
@@ -22,7 +23,8 @@ const mailer = new SmtpMailer({
   smtp: config.smtp,
 });
 const service = new SendToKindleService(converter, mailer, deliveryLogger);
-const toolHandler = new ToolHandler(service, config.defaultAuthor, config.devices);
+const frontmatterParser = new GrayMatterFrontmatterParser();
+const toolHandler = new ToolHandler(service, config.defaultAuthor, config.devices, frontmatterParser);
 
 function registerTools(s: McpServer, handler: ToolHandler): void {
   s.registerTool(
@@ -30,10 +32,16 @@ function registerTools(s: McpServer, handler: ToolHandler): void {
     {
       description:
         "Convert Markdown content to EPUB and send it to a Kindle device via email. " +
-        "Accepts a title, markdown content, and optional author name.",
+        "Title can be provided via --title parameter, frontmatter 'title' field, or will error if unresolvable. " +
+        "Content should be Markdown with optional YAML frontmatter (---\\ntitle: ...\\nurl: ...\\ndate: ...\\n---)",
       inputSchema: {
-        title: z.string().describe("Document title that will appear in the Kindle library"),
-        content: z.string().describe("Document content in Markdown format"),
+        title: z
+          .string()
+          .optional()
+          .describe(
+            "Document title (optional). If omitted, resolved from: (1) YAML frontmatter 'title' field, or (2) hard error if unresolvable.",
+          ),
+        content: z.string().describe("Document content in Markdown format with optional YAML frontmatter"),
         author: z
           .string()
           .optional()

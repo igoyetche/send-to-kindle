@@ -1,7 +1,7 @@
 # Paperboy — System Spec
 
-> Last updated: 2026-04-08
-> Status: Implemented
+> Last updated: 2026-04-10
+> Status: Implemented (PB-018 in progress)
 
 ## 1. Problem Statement
 
@@ -39,9 +39,28 @@ A user working with an AI assistant (Claude) frequently generates long-form cont
 
 ### Content Ingestion
 
-- **FR-1**: The system must accept a document title (string, required) that will appear as the document name in the Kindle library
-- **FR-2**: The system must accept document content (string, required) in Markdown format
+> Updated 2026-04-10 via feature: PB-018
+
+- **FR-1**: The system must resolve a document title that will appear as the document name in the Kindle library. The title is resolved in priority order: **(1) explicit caller-supplied title → (2) `title` field in YAML frontmatter → (3) filename stem** (for file-based inputs only; stdin and MCP have no filename fallback). See FR-27–FR-29 for frontmatter details.
+- **FR-2**: The system must accept document content (string, required) in Markdown format. When YAML frontmatter is present, it is parsed and stripped from the body before conversion (see FR-27).
 - **FR-3**: The system must accept an optional author parameter (string) for document metadata. Default: `"Claude"`
+
+### Frontmatter Metadata
+
+> Updated 2026-04-10 via feature: PB-018
+
+- **FR-27**: The system must parse YAML frontmatter from Markdown content. A frontmatter block is a `---`-delimited section at the start of the file (standard YAML front matter as produced by Paperclip and similar web-clipper tools). When frontmatter is present, the parsed block is stripped from the body before EPUB conversion so it does not appear in the rendered document.
+- **FR-28**: The system must resolve the document title using the following priority chain per entry point:
+
+  | Entry point | Resolution order |
+  |---|---|
+  | **CLI with `--file`** | explicit `--title` → frontmatter `title` → filename stem (minus `.md`) |
+  | **CLI with stdin** | explicit `--title` → frontmatter `title` → **validation error** |
+  | **MCP tool** | explicit `title` parameter → frontmatter `title` → **validation error** |
+  | **Watcher** | frontmatter `title` → first H1 heading in body → filename stem |
+
+- **FR-29**: If a frontmatter block exists but cannot be parsed as valid YAML, the system must return a frontmatter error rather than falling back or attempting conversion.
+- **FR-30**: The `url` and `date` fields from frontmatter, when present, must be made available to the EPUB conversion pipeline as document context. They are not rendered in PB-018 (reserved for a future feature), but must not be silently dropped.
 
 ### Content Conversion
 
@@ -82,9 +101,11 @@ A user working with an AI assistant (Claude) frequently generates long-form cont
 
 ### Validation
 
-- **FR-15**: The system must reject requests missing the required `title` parameter with a clear error message
+> Updated 2026-04-10 via feature: PB-018
+
+- **FR-15**: The system must reject requests where no title can be resolved (no explicit title, no frontmatter `title`, and no filename fallback for the entry point) with a clear validation error message.
 - **FR-16**: The system must reject requests missing the required `content` parameter with a clear error message
-- **FR-17**: The system must reject content exceeding 25 MB with a size error before attempting delivery
+- **FR-17**: The system must reject content exceeding 25 MB with a size error before attempting delivery. The 25 MB limit applies to the **stripped body** (after frontmatter is removed), not the raw file size.
 
 ## 5. Non-Functional Requirements
 
@@ -147,35 +168,46 @@ A user working with an AI assistant (Claude) frequently generates long-form cont
 ## 8. CLI Distribution
 
 > Updated 2026-03-31 via removal: Claude Code Skill approach dropped
+> Updated 2026-04-10 via feature: PB-018
 
 The system provides a CLI entry point (`paperboy`) as an alternative to the MCP server, enabling terminal-based usage.
 
 ### CLI Interface
 
 ```bash
-paperboy --title <title> [--file <path>] [--author <name>] [--device <name>]
+paperboy [--title <title>] --file <path> [--author <name>] [--device <name>]
+paperboy [--title <title>]                     # reads from stdin if piped
 paperboy --help
 paperboy --version
-echo "# Content" | paperboy --title <title>
 ```
 
 ### CLI Flags
 
 | Flag | Required | Description |
 |------|----------|-------------|
-| `--title <title>` | Yes | Title of the document sent to Kindle |
+| `--title <title>` | No | Title of the document. Overrides frontmatter title when both are present. If omitted, resolved from frontmatter or filename stem (see Title Resolution below). |
 | `--file <path>` | No | Path to a Markdown file; reads from stdin if omitted |
 | `--author <name>` | No | Author name embedded in the EPUB (default: configured value) |
 | `--device <name>` | No | Target Kindle device name (default: first configured device) |
 | `--help` | No | Show usage text and exit |
 | `--version` | No | Show version number and exit |
 
+### CLI Title Resolution
+
+When `--title` is not provided, the CLI resolves the title in this order:
+
+1. `title` field from YAML frontmatter in the document
+2. Filename stem (minus `.md`) — **only when `--file` is used**
+3. If no title can be resolved: exit with code 1 and a descriptive error
+
+When stdin is used without `--file`, there is no filename fallback — frontmatter is the only source if `--title` is omitted. A document piped via stdin with no frontmatter and no `--title` is an error.
+
 ### CLI Exit Codes
 
 | Code | Meaning |
 |------|---------|
 | 0 | Document sent successfully |
-| 1 | Validation error (missing title, empty content, size limit) |
+| 1 | Validation error (unresolvable title, empty content, size limit, malformed frontmatter) |
 | 2 | EPUB conversion error |
 | 3 | Email delivery error (SMTP auth, connection, rejection) |
 | 4 | Configuration error (missing or invalid environment variables) |
@@ -210,6 +242,7 @@ Install globally (`npm install -g paperboy`) or run via `npx paperboy`.
 ### Watch Folder
 
 > Updated 2026-03-31 via feature: PB-009
+> Updated 2026-04-10 via feature: PB-018
 
 The `paperboy watch` command starts a foreground watcher that monitors a configured folder for `.md` files, converts each to EPUB, and sends it to Kindle automatically.
 
@@ -236,11 +269,12 @@ Added to the existing `.env` configuration. Optional — only required when usin
 
 **Processing pipeline:**
 1. New `.md` file detected (chokidar with `awaitWriteFinish`)
-2. Read file, extract title from first H1 (fall back to filename)
-3. Create value objects, call `SendToKindleService.execute()`
-4. On success: move to `sent/`
-5. On transient SMTP failure: retry up to 3x with exponential backoff (2s, 4s, 8s)
-6. On permanent failure or retries exhausted: move to `error/` + write `.error.txt`
+2. Read file; parse and strip YAML frontmatter (if present). Malformed frontmatter → move to `error/`
+3. Resolve title: frontmatter `title` → first H1 in body → filename stem
+4. Create value objects, call `SendToKindleService.execute()`
+5. On success: move to `sent/`
+6. On transient SMTP failure: retry up to 3x with exponential backoff (2s, 4s, 8s)
+7. On permanent failure or retries exhausted: move to `error/` + write `.error.txt`
 
 **Error file format** (`error/<name>.error.txt`):
 ```

@@ -3,6 +3,8 @@ import { SendToKindleService } from "../../src/domain/send-to-kindle-service.js"
 import { Title } from "../../src/domain/values/title.js";
 import { Author } from "../../src/domain/values/author.js";
 import { MarkdownContent } from "../../src/domain/values/markdown-content.js";
+import { MarkdownDocument } from "../../src/domain/values/markdown-document.js";
+import { DocumentMetadata } from "../../src/domain/values/document-metadata.js";
 import { EpubDocument } from "../../src/domain/values/epub-document.js";
 import { KindleDevice } from "../../src/domain/values/kindle-device.js";
 import { EmailAddress } from "../../src/domain/values/email-address.js";
@@ -36,6 +38,12 @@ function makeContent(value: string) {
   return result.value;
 }
 
+function makeDocument(value: string) {
+  const content = makeContent(value);
+  const metadata = DocumentMetadata.empty();
+  return MarkdownDocument.fromParts(content, metadata);
+}
+
 function makeDevice(name = "personal"): KindleDevice {
   const emailResult = EmailAddress.create("user@kindle.com");
   if (!emailResult.ok) throw new Error("bad test setup");
@@ -65,7 +73,7 @@ describe("SendToKindleService", () => {
     const service = new SendToKindleService(converter, mailer, logger);
     const device = makeDevice("personal");
 
-    const result = await service.execute(makeTitle("Test"), makeContent("# Hello"), makeAuthor("Claude"), device);
+    const result = await service.execute(makeTitle("Test"), makeDocument("# Hello"), makeAuthor("Claude"), device);
 
     expect(result.ok).toBe(true);
     if (result.ok) {

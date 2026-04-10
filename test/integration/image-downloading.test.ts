@@ -5,6 +5,8 @@ import { createPinoLogger, createImageProcessorLogger } from "../../src/infrastr
 import { Title } from "../../src/domain/values/title.js";
 import { Author } from "../../src/domain/values/author.js";
 import { MarkdownContent } from "../../src/domain/values/markdown-content.js";
+import { MarkdownDocument } from "../../src/domain/values/markdown-document.js";
+import { DocumentMetadata } from "../../src/domain/values/document-metadata.js";
 
 function makeTitle(v: string) {
   const r = Title.create(v);
@@ -22,6 +24,12 @@ function makeContent(v: string) {
   const r = MarkdownContent.create(v);
   if (!r.ok) throw new Error("bad setup");
   return r.value;
+}
+
+function makeDocument(v: string) {
+  const content = makeContent(v);
+  const metadata = DocumentMetadata.empty();
+  return MarkdownDocument.fromParts(content, metadata);
 }
 
 describe.skip("Image downloading integration", () => {
@@ -200,7 +208,7 @@ More content here.
 
     const result = await converter.toEpub(
       makeTitle("Text Only"),
-      makeContent(markdown),
+      makeDocument(markdown),
       makeAuthor("Test"),
     );
 

@@ -8,10 +8,12 @@ import {
   err,
 } from "../../src/domain/errors.js";
 import type { DeliverySuccess } from "../../src/domain/send-to-kindle-service.js";
+import type { FrontmatterParser } from "../../src/domain/ports.js";
 import { DeviceRegistry } from "../../src/domain/device-registry.js";
 import { KindleDevice } from "../../src/domain/values/kindle-device.js";
 import { EmailAddress } from "../../src/domain/values/email-address.js";
 import { Author } from "../../src/domain/values/author.js";
+import { DocumentMetadata } from "../../src/domain/values/document-metadata.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -46,6 +48,18 @@ function makeLogger() {
   };
 }
 
+function fakeFrontmatterParser(): FrontmatterParser {
+  return {
+    parse: vi.fn((raw: string) => {
+      // Return the raw content as body with empty metadata
+      return ok({
+        metadata: DocumentMetadata.empty(),
+        body: raw,
+      });
+    }),
+  };
+}
+
 function makeDeps(overrides: Partial<WatcherDeps> = {}): WatcherDeps {
   const successResult: DeliverySuccess = {
     title: "My Article",
@@ -59,6 +73,7 @@ function makeDeps(overrides: Partial<WatcherDeps> = {}): WatcherDeps {
     },
     devices: makeRegistry(),
     defaultAuthor: makeAuthor(),
+    frontmatterParser: fakeFrontmatterParser(),
     watchFolder: "/watch",
     readFile: vi.fn().mockResolvedValue("# My Article\n\nContent here."),
     moveToSent: vi.fn().mockResolvedValue("/watch/sent/my-article.md"),

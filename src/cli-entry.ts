@@ -23,6 +23,7 @@ import { SendToKindleService } from "./domain/send-to-kindle-service.js";
 import { readFromFile, readFromStdin } from "./infrastructure/cli/content-reader.js";
 import { run, getUsageText } from "./application/cli.js";
 import { loadDotenv } from "./infrastructure/dotenv-loader.js";
+import { GrayMatterFrontmatterParser } from "./infrastructure/frontmatter/gray-matter-parser.js";
 
 interface PackageJson {
   readonly version: string;
@@ -94,6 +95,7 @@ async function main(): Promise<void> {
     const converter = new MarkdownEpubConverter(imageProcessor);
     const mailer = new SmtpMailer({ sender: config.sender, smtp: config.smtp });
     const service = new SendToKindleService(converter, mailer, deliveryLogger);
+    const frontmatterParser = new GrayMatterFrontmatterParser();
 
     // ADR #10: Coerce process.stdin.isTTY to boolean — it is `undefined` when
     // stdin is redirected, which would be incorrectly truthy if not narrowed.
@@ -103,6 +105,7 @@ async function main(): Promise<void> {
       service,
       devices: config.devices,
       defaultAuthor: config.defaultAuthor,
+      frontmatterParser,
       argv: process.argv.slice(2),
       isTTY,
       readFromFile,

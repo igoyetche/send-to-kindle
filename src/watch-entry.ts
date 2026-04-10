@@ -27,6 +27,7 @@ import { createFolderWatcher } from "./infrastructure/watcher/folder-watcher.js"
 import { startWatcher } from "./application/watcher.js";
 import type { WatcherLogger } from "./application/watcher.js";
 import { loadDotenv } from "./infrastructure/dotenv-loader.js";
+import { GrayMatterFrontmatterParser } from "./infrastructure/frontmatter/gray-matter-parser.js";
 
 // ---------------------------------------------------------------------------
 // 0. Handle --help before loading config (no env vars needed)
@@ -102,6 +103,7 @@ try {
   const converter = new MarkdownEpubConverter(imageProcessor);
   const mailer = new SmtpMailer({ sender: config.sender, smtp: config.smtp });
   const service = new SendToKindleService(converter, mailer, deliveryLogger);
+  const frontmatterParser = new GrayMatterFrontmatterParser();
 
   const authorResult = Author.create(config.defaultAuthor);
   if (!authorResult.ok) {
@@ -132,6 +134,7 @@ try {
     service,
     devices: config.devices,
     defaultAuthor: authorResult.value,
+    frontmatterParser,
     watchFolder,
     readFile: (path) => readFile(path, "utf-8"),
     moveToSent: (fp) => fileMover.moveToSent(fp),

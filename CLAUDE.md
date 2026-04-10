@@ -27,7 +27,7 @@ Feature → Design → Spec → Plan → Implement → Test → Validate → Syn
 
 1. **FEATURE** — Create feature doc in `docs/features/backlog/[name].md` with motivation, scope, and acceptance criteria. Assign the next sequential ticket code (`PB-NNN`) in the feature header. Check `docs/STATUS.md` for the last used code. **No technical details** — no dependencies, no layer changes, no pipelines, no implementation specifics. Those belong in the design.
 
-2. **DESIGN** — Create design doc in `docs/designs/[name].md` exploring technical approach and affected specs. **When starting design work:** move feature from `features/backlog/[name].md` → `features/active/[name].md`
+2. **DESIGN** — Create design doc in `docs/designs/[name].md` exploring technical approach and affected specs. **When starting design work:** create a new git branch named after the feature (e.g., `git checkout -b pb-NNN-feature-name`), then move feature from `features/backlog/[name].md` → `features/active/[name].md`
 
 3. **SPEC** — Update affected specs in `docs/specs/` based on approved design; log changes in `docs/CHANGELOG.md`
 
@@ -88,6 +88,7 @@ Features, plans, and designs have explicit **status folders**. Move files betwee
 
 **Features:**
 - Create in `docs/features/backlog/[name].md`
+- Create git branch `pb-NNN-feature-name` **when starting design work** (design phase entry point)
 - Move to `docs/features/active/[name].md` **when starting design work** (design phase entry point)
 - Move to `docs/features/done/[name].md` when all acceptance criteria met
 
@@ -117,9 +118,11 @@ Features, plans, and designs have explicit **status folders**. Move files betwee
 8. Features and plans have lifecycles: backlog → active → done (use file movement to track)
 9. Designs stay in place and get updated during implementation (don't archive)
 10. If validation reveals spec/design errors, update upstream docs BEFORE continuing
-11. **Move feature to active immediately when starting design work** — design is the entry point for active work
-12. **Move plan to active immediately when starting implementation** — implementation is the entry point for active work
-13. **Never create or open a PR without asking first** — even for completed features or adjustments
+11. **Create a git branch before starting design work** — branch name format: `pb-NNN-feature-name`
+12. **Never work directly on `main`** — all feature work happens on a dedicated branch. Only commit to `main` when the user explicitly instructs you to (e.g., "commit this to main"). If you find yourself on `main` with uncommitted changes, stop and create a branch first.
+13. **Move feature to active immediately when starting design work** — design is the entry point for active work
+14. **Move plan to active immediately when starting implementation** — implementation is the entry point for active work
+15. **Never create or open a PR without asking first** — even for completed features or adjustments
 
 ---
 

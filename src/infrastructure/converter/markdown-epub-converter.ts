@@ -1,7 +1,7 @@
 import { marked } from "marked";
 import sanitizeHtml from "sanitize-html";
 import type { ContentConverter } from "../../domain/ports.js";
-import type { Title, Author, MarkdownContent } from "../../domain/values/index.js";
+import type { Title, Author, MarkdownDocument } from "../../domain/values/index.js";
 import { EpubDocument } from "../../domain/values/index.js";
 import { ConversionError, type Result, ok, err } from "../../domain/errors.js";
 import type { ImageProcessor } from "./image-processor.js";
@@ -22,11 +22,11 @@ export class MarkdownEpubConverter implements ContentConverter {
 
   async toEpub(
     title: Title,
-    content: MarkdownContent,
+    document: MarkdownDocument,
     author: Author,
   ): Promise<Result<EpubDocument, ConversionError>> {
     try {
-      const rawHtml = await marked.parse(content.value);
+      const rawHtml = await marked.parse(document.content.value);
 
       const safeHtml = sanitizeHtml(rawHtml, {
         allowedTags: ALLOWED_TAGS,
@@ -52,21 +52,19 @@ export class MarkdownEpubConverter implements ContentConverter {
       }
 
       // Create EPUB instance with custom downloadAllImages that uses pre-downloaded data
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+       
       const epubInstance = createEpubWithPredownloadedImages(
         { title: title.value, author: author.value },
         [{ title: title.value, content: processedHtml }],
       );
 
       // Attach the image map so downloadAllImages can access it
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      (epubInstance as any).__imageBufferMap = imageBufferMap;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      (epubInstance as any).__imageBufferMap = imageBufferMap; // eslint-disable-line @typescript-eslint/no-explicit-any
 
       // Generate EPUB with pre-downloaded images
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-explicit-any
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      const buffer = await (epubInstance as any).genEpub();
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
+      const buffer = await (epubInstance as any).genEpub(); // eslint-disable-line @typescript-eslint/no-explicit-any
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       return ok(new EpubDocument(title.value, buffer, stats));

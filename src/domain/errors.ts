@@ -31,11 +31,17 @@ export class DeliveryError {
   ) {}
 }
 
+export class FrontmatterError {
+  readonly kind = "frontmatter" as const;
+  constructor(readonly message: string) {}
+}
+
 export type DomainError =
   | ValidationError
   | SizeLimitError
   | ConversionError
-  | DeliveryError;
+  | DeliveryError
+  | FrontmatterError;
 
 export type Result<T, E> =
   | { readonly ok: true; readonly value: T }

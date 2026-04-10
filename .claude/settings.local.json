@@ -1,17 +1,4 @@
 {
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "npx eslint --fix \"$CLAUDE_TOOL_OUTPUT_PATH\" 2>&1 || true"
-          }
-        ]
-      }
-    ]
-  },
   "permissions": {
     "allow": [
       "WebSearch",
@@ -37,7 +24,23 @@
       "Write(path:scripts/**)",
       "Write(path:src/**)",
       "Write(path:test/**)",
-      "Bash(node:*)"      
+      "Bash(node:*)",
+      "Bash(ls:*)",
+      "Bash(gh pr:*)",
+      "Bash(grep -l \"\\\\.execute\\\\|toEpub\" test/**/*.ts test/**/**/*.ts)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx eslint --fix \"$CLAUDE_TOOL_OUTPUT_PATH\" 2>&1 || true"
+          }
+        ]
+      }
     ]
   }
 }

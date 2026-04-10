@@ -10,3 +10,6 @@ Steps:
 
 
 We need to change the CLI to make the title parameter optional in the command line since it could be already present in the .md file
+
+- adjust Title and metadata
+- Fix Sonar issues (how can claude get feedback from sonar?)

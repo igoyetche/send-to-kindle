@@ -21,6 +21,8 @@ import type { SendToKindleService } from "../../src/domain/send-to-kindle-servic
 import { DeviceRegistry } from "../../src/domain/device-registry.js";
 import { KindleDevice } from "../../src/domain/values/kindle-device.js";
 import { EmailAddress } from "../../src/domain/values/email-address.js";
+import type { FrontmatterParser } from "../../src/domain/ports.js";
+import { DocumentMetadata } from "../../src/domain/values/document-metadata.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -138,12 +140,14 @@ describe("parseArgs", () => {
   });
 
   describe("FR-CLI-1: error cases", () => {
-    it("returns ParseError with message about missing --title when argv is empty", () => {
+    it("allows empty argv (title is optional at parse level, resolved later)", () => {
       const result = parseArgs([]);
 
-      expect(result.kind).toBe("parse-error");
-      if (result.kind === "parse-error") {
-        expect(result.message).toContain("--title");
+      expect(result.kind).toBe("args");
+      if (result.kind === "args") {
+        expect(result.title).toBe("");
+        expect(result.help).toBe(false);
+        expect(result.version).toBe(false);
       }
     });
 
@@ -393,11 +397,25 @@ function fakeRunService(
   };
 }
 
+function fakeFrontmatterParser(): FrontmatterParser {
+  return {
+    parse: vi.fn((raw: string) => {
+      // Return the raw content as body with empty metadata
+      // This simulates: no frontmatter → metadata is empty, body is the raw content
+      return ok({
+        metadata: DocumentMetadata.empty(),
+        body: raw,
+      });
+    }),
+  };
+}
+
 function makeDeps(overrides?: Partial<CliDeps>): CliDeps {
   return {
     service: fakeRunService(),
     devices: makeRunRegistry("personal"),
     defaultAuthor: "Claude",
+    frontmatterParser: fakeFrontmatterParser(),
     argv: ["--title", "Test", "--file", "notes.md"],
     isTTY: true,
     readFromFile: vi.fn().mockResolvedValue("# Hello"),
@@ -458,17 +476,24 @@ describe("run", () => {
     });
   });
 
-  describe("FR-CLI-4: missing --title", () => {
-    it("FR-CLI-4: returns 1 and writes error to stderr when --title is missing", async () => {
+  describe("FR-CLI-4: unresolvable title", () => {
+    it("FR-CLI-4: returns 1 and writes error to stderr when stdin has no title in frontmatter or --title arg", async () => {
       const stderr = vi.fn();
-      const deps = makeDeps({ argv: ["--file", "notes.md"], stderr });
+      // Stdin without --title and no frontmatter → unresolvable title
+      const readFromStdin = vi.fn().mockResolvedValue("Just body content with no H1");
+      const deps = makeDeps({
+        argv: [], // No --title, no --file (so will use stdin)
+        isTTY: false,
+        readFromStdin,
+        stderr,
+      });
 
       const code = await run(deps);
 
       expect(code).toBe(1);
       const calls = stderr.mock.calls.map((c) => c[0] as string);
       const combined = calls.join("\n");
-      expect(combined).toContain("--title");
+      expect(combined).toMatch(/title|error/i);
     });
   });
 

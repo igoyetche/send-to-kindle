@@ -5,6 +5,8 @@ import type { ImageProcessor } from "../../../src/infrastructure/converter/image
 import { Title } from "../../../src/domain/values/title.js";
 import { Author } from "../../../src/domain/values/author.js";
 import { MarkdownContent } from "../../../src/domain/values/markdown-content.js";
+import { MarkdownDocument } from "../../../src/domain/values/markdown-document.js";
+import { DocumentMetadata } from "../../../src/domain/values/document-metadata.js";
 
 function makeTitle(v: string) {
   const r = Title.create(v);
@@ -24,6 +26,12 @@ function makeContent(v: string) {
   return r.value;
 }
 
+function makeDocument(v: string) {
+  const content = makeContent(v);
+  const metadata = DocumentMetadata.empty();
+  return MarkdownDocument.fromParts(content, metadata);
+}
+
 describe("MarkdownEpubConverter", () => {
   // Mock ImageProcessor that passes HTML through unchanged
   const mockImageProcessor: ImageProcessor = {
@@ -40,7 +48,7 @@ describe("MarkdownEpubConverter", () => {
   it("produces an EpubDocument with correct title", async () => {
     const result = await converter.toEpub(
       makeTitle("Test Book"),
-      makeContent("# Chapter 1\n\nHello world."),
+      makeDocument("# Chapter 1\n\nHello world."),
       makeAuthor("Claude"),
     );
     expect(result.ok).toBe(true);
@@ -54,7 +62,7 @@ describe("MarkdownEpubConverter", () => {
   it("does not return a conversion error on valid input", async () => {
     const result = await converter.toEpub(
       makeTitle("Valid Book"),
-      makeContent("# Hello\n\nSome content."),
+      makeDocument("# Hello\n\nSome content."),
       makeAuthor("Claude"),
     );
     // Explicitly assert no error — catches broken epub-gen-memory imports
@@ -68,7 +76,7 @@ describe("MarkdownEpubConverter", () => {
   it("produces a non-empty EPUB buffer with valid zip magic bytes", async () => {
     const result = await converter.toEpub(
       makeTitle("Magic Bytes Test"),
-      makeContent("# Hello"),
+      makeDocument("# Hello"),
       makeAuthor("Claude"),
     );
     expect(result.ok).toBe(true);
@@ -84,7 +92,7 @@ describe("MarkdownEpubConverter", () => {
   it("generates a URL-safe filename from title", async () => {
     const result = await converter.toEpub(
       makeTitle("Clean Architecture: A Guide"),
-      makeContent("# Hello"),
+      makeDocument("# Hello"),
       makeAuthor("Claude"),
     );
     expect(result.ok).toBe(true);
@@ -97,7 +105,7 @@ describe("MarkdownEpubConverter", () => {
   it("sanitizes script tags from markdown", async () => {
     const result = await converter.toEpub(
       makeTitle("XSS Test"),
-      makeContent('Hello <script>alert("xss")</script> World'),
+      makeDocument('Hello <script>alert("xss")</script> World'),
       makeAuthor("Claude"),
     );
     expect(result.ok).toBe(true);
@@ -118,7 +126,7 @@ describe("MarkdownEpubConverter", () => {
 
     const result = await converter.toEpub(
       makeTitle("Structure Test"),
-      makeContent(md),
+      makeDocument(md),
       makeAuthor("Claude"),
     );
     expect(result.ok).toBe(true);
@@ -159,7 +167,7 @@ describe("MarkdownEpubConverter", () => {
 
     const result = await converterWithImages.toEpub(
       makeTitle("Images Test"),
-      makeContent(
+      makeDocument(
         '# Test\n\n<img src="https://example.com/image1.jpg" alt="img1">\n<img src="https://example.com/image2.png" alt="img2">',
       ),
       makeAuthor("Claude"),
@@ -260,7 +268,7 @@ describe("MarkdownEpubConverter", () => {
 
     const result = await converterWithImages.toEpub(
       makeTitle("URL Preservation Test"),
-      makeContent(
+      makeDocument(
         '# Test\n\n<img src="https://example.com/test.jpg" alt="test">',
       ),
       makeAuthor("Claude"),
