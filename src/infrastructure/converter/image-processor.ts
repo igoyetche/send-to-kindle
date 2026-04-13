@@ -310,39 +310,7 @@ export class ImageProcessor {
     );
 
     try {
-      await this.validateUrl(url);
-
-      const response = await fetch(url, {
-        headers: BROWSER_HEADERS,
-        signal: controller.signal,
-        redirect: "manual",
-      });
-
-      // Handle redirects manually to prevent SSRF
-      if ([301, 302, 303, 307, 308].includes(response.status)) {
-        const location = response.headers.get("location");
-        if (!location) {
-          throw new Error(`Redirect without Location header`);
-        }
-
-        // Validate redirect URL is HTTP(S)
-        if (
-          !location.startsWith("http://") &&
-          !location.startsWith("https://")
-        ) {
-          throw new Error(`Redirect to non-HTTP protocol: ${location}`);
-        }
-
-        // Don't follow redirects for now - just fail
-        throw new Error(`Redirect not supported: ${location}`);
-      }
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-
-      const arrayBuffer = await response.arrayBuffer();
-      return Buffer.from(arrayBuffer);
+      return await this.doFetch(url, controller.signal, 0);
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") {
         throw new Error("Download timeout");
@@ -351,6 +319,38 @@ export class ImageProcessor {
     } finally {
       clearTimeout(timeout);
     }
+  }
+
+  private async doFetch(
+    url: string,
+    signal: AbortSignal,
+    redirectsFollowed: number,
+  ): Promise<Buffer> {
+    await this.validateUrl(url);
+
+    const response = await fetch(url, {
+      headers: BROWSER_HEADERS,
+      signal,
+      redirect: "manual",
+    });
+
+    if ([301, 302, 303, 307, 308].includes(response.status)) {
+      if (redirectsFollowed >= 5) {
+        throw new Error("Too many redirects (> 5)");
+      }
+      const location = response.headers.get("location");
+      if (!location) {
+        throw new Error("Redirect without Location header");
+      }
+      return this.doFetch(location, signal, redirectsFollowed + 1);
+    }
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    return Buffer.from(arrayBuffer);
   }
 
   private generateProcessedImages(
