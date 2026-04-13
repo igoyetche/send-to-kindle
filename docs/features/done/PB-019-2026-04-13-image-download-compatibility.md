@@ -1,9 +1,9 @@
 # PB-019: Image Download Compatibility for Protected and CDN-Hosted Images
 
-**Status:** Active — Design
+**Status:** Complete
 **Design Started:** 2026-04-13
+**Completed:** 2026-04-13
 **Branch:** `pb-019-image-download-compatibility`
-**Date:** 2026-04-13
 
 ## Motivation
 
@@ -36,11 +36,11 @@ An article clipped from dl.acm.org (or similar publisher/news site) produces an 
 
 ## Acceptance Criteria
 
-- [ ] Images from dl.acm.org article pages download successfully (returns actual image bytes, not `HTTP 403`)
-- [ ] Images served behind a redirect chain (1–5 hops) are downloaded successfully and embedded in the EPUB
-- [ ] Redirects to private IPv4 ranges (10.x, 172.16–31.x, 192.168.x, 127.x) and loopback addresses are rejected with a clear error — SSRF protection is preserved
-- [ ] Redirects to non-HTTP/HTTPS protocols continue to be rejected
-- [ ] Redirect depth is capped (e.g., max 5 hops); exceeding the cap fails that image gracefully without halting conversion
-- [ ] All existing image-downloading tests continue to pass (no regression)
-- [ ] New tests cover: successful download with redirect, redirect to private IP rejected, redirect depth exceeded, User-Agent header present on outgoing requests
-- [ ] TypeScript compiles with zero errors in strict mode
+- [-] Images from dl.acm.org article pages download successfully (returns actual image bytes, not `HTTP 403`) — **dropped**: dl.acm.org uses Cloudflare Bot Management (TLS fingerprinting); cannot be bypassed with HTTP headers alone. Tracked as PB-020.
+- [x] Images served behind a redirect chain (1–5 hops) are downloaded successfully and embedded in the EPUB
+- [x] Redirects to private IPv4 ranges (10.x, 172.16–31.x, 192.168.x, 127.x) and loopback addresses are rejected with a clear error — SSRF protection is preserved
+- [x] Redirects to non-HTTP/HTTPS protocols continue to be rejected
+- [x] Redirect depth is capped (max 5 hops); exceeding the cap fails that image gracefully without halting conversion
+- [x] All existing image-downloading tests continue to pass (no regression)
+- [x] New tests cover: successful download with redirect, redirect to private IP rejected, redirect depth exceeded, User-Agent header present on outgoing requests
+- [x] TypeScript compiles with zero errors in strict mode

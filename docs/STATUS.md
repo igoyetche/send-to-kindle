@@ -1,17 +1,18 @@
 # Project Status Dashboard
 
 > Last updated: 2026-04-13
-> Last ticket code: PB-019
+> Last ticket code: PB-020
 
 ## Active Work
 
 | Code | Feature | Phase | Branch |
 |------|---------|-------|--------|
-| PB-019 | Image Download Compatibility (headers + redirects) | 🔄 Design | `pb-019-image-download-compatibility` |
+| — | — | — | — |
 
 ## Backlog
 
 | Code | Feature | Phase | Specs Affected | Plan | Priority |
+| PB-020 | curl --impersonate Cloudflare Bypass | Feature | specs/PB-016-image-downloading-spec.md | — | Medium |
 | PB-011 | Encrypted Configuration Storage | Feature | specs/main-spec.md | — | High |
 | PB-006 | Trusted HTTPS Certificate | Design | specs/main-spec.md | — | Medium |
 | PB-007 | Interactive Setup Wizard | Feature | specs/main-spec.md | — | High |
@@ -24,6 +25,7 @@
 
 | Code | Feature | Specs Affected | Completed | Plan Archive |
 |------|---------|---|---|---|
+| PB-019 | Image Download Compatibility (headers + redirects) | specs/PB-016-image-downloading-spec.md | 2026-04-13 | plans/done/PB-019-2026-04-13-image-download-compatibility.md |
 | PB-017 | Fix Image Embedding for Kindle EPUB | specs/main-spec.md | 2026-04-09 | plans/done/PB-017-2026-04-09-kindle-epub-image-files.md |
 | PB-016 | Online Image Downloading | specs/PB-016-image-downloading-spec.md, specs/main-spec.md | 2026-04-08 | plans/done/PB-016-2026-04-08-online-image-downloading.md |
 | PB-010 | Safe npm Packages | — | 2026-04-01 | plans/done/PB-010-2026-04-01-safe-packages.md |

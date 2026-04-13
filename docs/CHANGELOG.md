@@ -4,6 +4,27 @@ Tracks every change to specs, designs, and plans that deviates from the original
 
 ---
 
+## 2026-04-13 — PB-019 Complete: Image Download Compatibility (Headers + Redirects)
+
+### Feature Completed
+- **Browser-compatible request headers**: All image fetch requests now include `User-Agent` (Chrome/124), `Accept`, and `Accept-Language` headers, bypassing basic hotlink protection and User-Agent bot-detection on public CDNs and image hosts.
+- **Safe redirect following**: HTTP 3xx redirects (301, 302, 303, 307, 308) are followed up to 5 hops per image. SSRF protection applies at every hop — redirect targets resolving to private/loopback IPs are rejected before the request is made.
+- **New tests**: 12 tests added across 3 describe blocks (request headers, SSRF protection, redirect following). Total: 223 passing.
+
+### Spec Updated
+- `docs/specs/PB-016-image-downloading-spec.md` — Added FR-14 through FR-17 (browser headers, redirect following, SSRF on redirects, timeout scope); added NG-7 (Cloudflare Bot Management TLS fingerprinting out of scope).
+
+### Known Limitation Discovered and Documented
+**Original assumption incorrect:** The design assumed browser-compatible HTTP headers would bypass bot-detection on virtually all public image hosts. Post-implementation testing revealed this is false for sites using Cloudflare Bot Management (e.g., dl.acm.org).
+
+**Root cause:** Cloudflare Bot Management uses JA3/JA3N TLS fingerprinting — it compares the declared User-Agent (Chrome) against the TLS ClientHello signature (Node.js/OpenSSL). The signatures don't match regardless of HTTP headers, resulting in HTTP 403. Verified by testing with no headers, browser headers, and full `sec-ch-ua` + `Sec-Fetch-*` headers — all returned 403 with CF-Ray headers.
+
+**What was fixed:** Basic hotlink protection, User-Agent checks, CDN redirects — the majority of public image hosts. Confirmed working: Webflow CDN (66/66 images, 0 failures).
+
+**Future path:** Tracked as PB-020 — `curl --impersonate chrome` subprocess fallback for Cloudflare Bot Management-protected hosts (requires curl 8.x).
+
+---
+
 ## 2026-04-09 — PB-017 Complete: Kindle EPUB Image File Compatibility
 
 ### Feature Completed

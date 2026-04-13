@@ -25,6 +25,7 @@ The underlying library (`epub-gen-memory`) already downloads images referenced i
 - NG-4: No OCR or automatic alt-text generation for images
 - NG-5: No image compression quality tuning exposed to the user — sensible defaults only
 - NG-6: No support for `<picture>` elements or `srcset` — only standard `<img src="...">` references
+- NG-7: No support for sites protected by Cloudflare Bot Management or similar TLS-fingerprint-based bot detection. Browser-compatible HTTP headers (FR-14) bypass basic hotlink protection and User-Agent checks but cannot bypass TLS fingerprinting. Sites like dl.acm.org that use Cloudflare Bot Management will continue to return HTTP 403. A future feature may add a `curl --impersonate` fallback for this class of sites.
 
 ## 3. Users and Actors
 
