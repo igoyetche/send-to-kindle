@@ -45,6 +45,13 @@ const KINDLE_FORMATS = new Set(["jpeg", "jpg", "png", "gif", "bmp"]);
 // Formats that need conversion to JPEG
 const CONVERT_FORMATS = new Set(["avif", "webp", "tiff", "svg", "heif", "heic"]);
 
+const BROWSER_HEADERS: Record<string, string> = {
+  "User-Agent":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+  Accept: "image/webp,image/avif,image/*,*/*;q=0.8",
+  "Accept-Language": "en-US,en;q=0.5",
+};
+
 interface DownloadedImage {
   url: string;
   buffer: Buffer;
@@ -253,8 +260,9 @@ export class ImageProcessor {
 
     try {
       const response = await fetch(url, {
+        headers: BROWSER_HEADERS,
         signal: controller.signal,
-        redirect: "manual", // Manually handle redirects for SSRF protection
+        redirect: "manual",
       });
 
       // Handle redirects manually to prevent SSRF

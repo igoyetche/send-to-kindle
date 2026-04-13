@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { ImageProcessor } from "../../../src/infrastructure/converter/image-processor.js";
 import type {
   ImageProcessorConfig,
@@ -95,7 +95,7 @@ describe("ImageProcessor", () => {
       expect(result.stats.downloaded).toBe(0);
       expect(mockLogger.imageDownloadFailure).toHaveBeenCalled();
     },
-    { timeout: 60_000 },
+    60_000,
   );
 
   it("deduplicates duplicate image URLs", async () => {
@@ -202,5 +202,33 @@ describe("ImageProcessor", () => {
     expect(result.html).toContain("<p>More content</p>");
     expect(result.html).toContain("<ul>");
     expect(result.html).not.toContain("<img");
+  });
+});
+
+describe("request headers", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("sends User-Agent and Accept headers on every image request", async () => {
+    const mockFetch = vi.fn().mockResolvedValue(
+      new Response(null, { status: 403 }),
+    );
+    vi.stubGlobal("fetch", mockFetch);
+
+    const mockLogger = createMockLogger();
+    const processor = new ImageProcessor(defaultConfig, mockLogger);
+
+    await processor.process(`<img src="https://example.com/photo.png" alt="test">`);
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      "https://example.com/photo.png",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          "User-Agent": expect.stringContaining("Mozilla/5.0"),
+          Accept: expect.stringContaining("image/"),
+        }),
+      }),
+    );
   });
 });
