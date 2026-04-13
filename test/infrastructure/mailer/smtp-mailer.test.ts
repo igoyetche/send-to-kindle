@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { SmtpMailer, type SmtpMailerConfig } from "../../../src/infrastructure/mailer/smtp-mailer.js";
+import { SmtpMailer, generateEpubFilename, type SmtpMailerConfig } from "../../../src/infrastructure/mailer/smtp-mailer.js";
 import { EpubDocument } from "../../../src/domain/values/epub-document.js";
 import { KindleDevice } from "../../../src/domain/values/kindle-device.js";
 import { EmailAddress } from "../../../src/domain/values/email-address.js";
@@ -111,5 +111,91 @@ describe("SmtpMailer", () => {
     if (!result.ok) {
       expect(result.error.cause).toBe("rejection");
     }
+  });
+
+  it("uses document author and date in attachment filename", async () => {
+    const mailer = new SmtpMailer(config);
+    const doc = new EpubDocument("My Article", Buffer.from("epub"), undefined, "Claude", "2024-01-15");
+
+    await mailer.send(doc, makeDevice());
+
+    expect(mockSendMail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        attachments: [
+          expect.objectContaining({ filename: "My Article - Claude - 2024-01-15.epub" }),
+        ],
+      }),
+    );
+  });
+
+  it("omits author segment when document has no author", async () => {
+    const mailer = new SmtpMailer(config);
+    const doc = new EpubDocument("My Article", Buffer.from("epub"), undefined, undefined, "2024-01-15");
+
+    await mailer.send(doc, makeDevice());
+
+    expect(mockSendMail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        attachments: [
+          expect.objectContaining({ filename: "My Article - 2024-01-15.epub" }),
+        ],
+      }),
+    );
+  });
+
+  it("uses custom generateFilename when provided in config", async () => {
+    const customConfig: SmtpMailerConfig = {
+      ...config,
+      generateFilename: ({ title }) => `custom-${title}.epub`,
+    };
+    const mailer = new SmtpMailer(customConfig);
+    const doc = new EpubDocument("My Article", Buffer.from("epub"), undefined, "Claude", "2024-01-15");
+
+    await mailer.send(doc, makeDevice());
+
+    expect(mockSendMail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        attachments: [
+          expect.objectContaining({ filename: "custom-My Article.epub" }),
+        ],
+      }),
+    );
+  });
+});
+
+describe("generateEpubFilename", () => {
+  it("formats title, author, and date when all are present", () => {
+    expect(generateEpubFilename({ title: "My Article", author: "Claude", date: "2024-01-15" }))
+      .toBe("My Article - Claude - 2024-01-15.epub");
+  });
+
+  it("omits author segment when author is absent", () => {
+    expect(generateEpubFilename({ title: "My Article", date: "2024-01-15" }))
+      .toBe("My Article - 2024-01-15.epub");
+  });
+
+  it("omits date segment when date is absent", () => {
+    expect(generateEpubFilename({ title: "My Article", author: "Claude" }))
+      .toBe("My Article - Claude.epub");
+  });
+
+  it("returns only title when neither author nor date are present", () => {
+    expect(generateEpubFilename({ title: "My Article" }))
+      .toBe("My Article.epub");
+  });
+
+  it("falls back to 'document.epub' when title sanitizes to empty", () => {
+    expect(generateEpubFilename({ title: ":::/\\||" }))
+      .toBe("document.epub");
+  });
+
+  it("strips invalid filename characters from each segment", () => {
+    expect(generateEpubFilename({ title: "AI: The Next?", author: "John/Doe", date: "2024-01-15" }))
+      .toBe("AI The Next - JohnDoe - 2024-01-15.epub");
+  });
+
+  it("preserves spaces and readable characters in title", () => {
+    expect(generateEpubFilename({ title: "How React 18 Breaks Your useEffect" }))
+      .toBe("How React 18 Breaks Your useEffect.epub");
   });
 });

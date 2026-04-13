@@ -5,6 +5,8 @@ export class EpubDocument {
     readonly title: string,
     readonly buffer: Buffer,
     readonly imageStats?: ImageStats,
+    readonly author?: string,
+    readonly date?: string,
   ) {}
 
   get sizeBytes(): number {

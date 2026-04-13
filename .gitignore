@@ -140,3 +140,6 @@ vite.config.ts.timestamp-*
 
 # Generated EPUB files used for local testing/validation
 *.epub
+
+# Git worktrees
+.worktrees/

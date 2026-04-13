@@ -67,7 +67,7 @@ export class MarkdownEpubConverter implements ContentConverter {
       const buffer = await (epubInstance as any).genEpub(); // eslint-disable-line @typescript-eslint/no-explicit-any
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-      return ok(new EpubDocument(title.value, buffer, stats));
+      return ok(new EpubDocument(title.value, buffer, stats, author.value, document.metadata.date));
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Unknown conversion error";

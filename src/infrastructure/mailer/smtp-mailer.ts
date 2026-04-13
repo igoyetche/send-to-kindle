@@ -5,18 +5,53 @@ import type { EpubDocument } from "../../domain/values/index.js";
 import type { KindleDevice } from "../../domain/values/index.js";
 import { DeliveryError, type Result, ok, err } from "../../domain/errors.js";
 
+export interface EpubFilenameOptions {
+  title: string;
+  author?: string;
+  date?: string;
+}
+
 export interface SmtpMailerConfig {
   sender: { email: string };
   smtp: { host: string; port: number; user: string; pass: string };
+  /** Override the default filename generator. Receives document metadata, must return a filename ending in ".epub". */
+  generateFilename?: (opts: EpubFilenameOptions) => string;
 }
 
-function slugify(title: string): string {
-  const slug = title
-    .toLowerCase()
-    .replace(/\s+/g, "-")
-    .replace(/[^a-z0-9-]/g, "")
-    .slice(0, 100);
-  return `${slug || "document"}.epub`;
+/** Removes characters that are invalid in filenames on Windows and Unix. */
+function sanitizeComponent(value: string): string {
+  return value
+    .replace(/[<>:"/\\|?*\x00-\x1f]/g, "")
+    .trim()
+    .slice(0, 80);
+}
+
+/**
+ * Generates an EPUB attachment filename from document metadata.
+ *
+ * Format:
+ *   - With author:    "Title - Author - Date.epub"
+ *   - Without author: "Title - Date.epub"
+ *   - Date absent:    "Title - Author.epub" / "Title.epub"
+ *
+ * Each segment is sanitized to remove characters invalid in filenames.
+ * Falls back to "document.epub" when the title sanitizes to empty.
+ */
+export function generateEpubFilename(opts: EpubFilenameOptions): string {
+  const title = sanitizeComponent(opts.title) || "document";
+  const parts: string[] = [title];
+
+  if (opts.author) {
+    const clean = sanitizeComponent(opts.author);
+    if (clean) parts.push(clean);
+  }
+
+  if (opts.date) {
+    const clean = sanitizeComponent(opts.date);
+    if (clean) parts.push(clean);
+  }
+
+  return parts.join(" - ") + ".epub";
 }
 
 function categorizeError(
@@ -73,7 +108,12 @@ export class SmtpMailer implements DocumentMailer {
     document: EpubDocument,
     device: KindleDevice,
   ): Promise<Result<void, DeliveryError>> {
-    const filename = slugify(document.title);
+    const filenameGen = this.config.generateFilename ?? generateEpubFilename;
+    const filename = filenameGen({
+      title: document.title,
+      author: document.author,
+      date: document.date,
+    });
 
     try {
       await this.transporter.sendMail({
