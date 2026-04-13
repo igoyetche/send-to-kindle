@@ -1,11 +1,13 @@
 # Project Status Dashboard
 
-> Last updated: 2026-04-09
-> Last ticket code: PB-017
+> Last updated: 2026-04-13
+> Last ticket code: PB-019
 
 ## Active Work
 
-(None — all assigned work complete)
+| Code | Feature | Phase | Branch |
+|------|---------|-------|--------|
+| PB-019 | Image Download Compatibility (headers + redirects) | 🔄 Design | `pb-019-image-download-compatibility` |
 
 ## Backlog
 
