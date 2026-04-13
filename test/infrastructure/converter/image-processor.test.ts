@@ -232,3 +232,106 @@ describe("request headers", () => {
     );
   });
 });
+
+describe("SSRF protection", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("blocks requests to IPv4 loopback (127.0.0.1) before fetching", async () => {
+    const mockFetch = vi.fn();
+    vi.stubGlobal("fetch", mockFetch);
+
+    const mockLogger = createMockLogger();
+    const processor = new ImageProcessor(defaultConfig, mockLogger);
+
+    const result = await processor.process(
+      `<img src="http://127.0.0.1/image.png" alt="test">`,
+    );
+
+    expect(result.stats.failed).toBe(1);
+    expect(mockFetch).not.toHaveBeenCalled();
+    expect(mockLogger.imageDownloadFailure).toHaveBeenCalledWith(
+      "http://127.0.0.1/image.png",
+      expect.stringContaining("private IP"),
+    );
+  });
+
+  it("blocks requests to private class A (10.x.x.x)", async () => {
+    const mockFetch = vi.fn();
+    vi.stubGlobal("fetch", mockFetch);
+
+    const mockLogger = createMockLogger();
+    const processor = new ImageProcessor(defaultConfig, mockLogger);
+
+    const result = await processor.process(
+      `<img src="http://10.0.0.1/image.png" alt="test">`,
+    );
+
+    expect(result.stats.failed).toBe(1);
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("blocks requests to private class B (172.16.x.x)", async () => {
+    const mockFetch = vi.fn();
+    vi.stubGlobal("fetch", mockFetch);
+
+    const mockLogger = createMockLogger();
+    const processor = new ImageProcessor(defaultConfig, mockLogger);
+
+    const result = await processor.process(
+      `<img src="http://172.16.0.1/image.png" alt="test">`,
+    );
+
+    expect(result.stats.failed).toBe(1);
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("blocks requests to private class C (192.168.x.x)", async () => {
+    const mockFetch = vi.fn();
+    vi.stubGlobal("fetch", mockFetch);
+
+    const mockLogger = createMockLogger();
+    const processor = new ImageProcessor(defaultConfig, mockLogger);
+
+    const result = await processor.process(
+      `<img src="http://192.168.1.1/image.png" alt="test">`,
+    );
+
+    expect(result.stats.failed).toBe(1);
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("blocks requests to IPv6 loopback (::1)", async () => {
+    const mockFetch = vi.fn();
+    vi.stubGlobal("fetch", mockFetch);
+
+    const mockLogger = createMockLogger();
+    const processor = new ImageProcessor(defaultConfig, mockLogger);
+
+    const result = await processor.process(
+      `<img src="http://[::1]/image.png" alt="test">`,
+    );
+
+    expect(result.stats.failed).toBe(1);
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("allows requests to public IPs", async () => {
+    // 93.184.216.34 is the real IP of example.com — public, non-private
+    const mockFetch = vi.fn().mockResolvedValue(
+      new Response(null, { status: 404 }),
+    );
+    vi.stubGlobal("fetch", mockFetch);
+
+    const mockLogger = createMockLogger();
+    const processor = new ImageProcessor(defaultConfig, mockLogger);
+
+    await processor.process(
+      `<img src="http://93.184.216.34/image.png" alt="test">`,
+    );
+
+    // fetch should have been called (validation passed), even though the request 404s
+    expect(mockFetch).toHaveBeenCalled();
+  });
+});

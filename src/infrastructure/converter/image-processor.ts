@@ -1,4 +1,6 @@
 import sharp from "sharp";
+import { lookup as dnsLookup } from "node:dns/promises";
+import { isIPv4, isIPv6 } from "node:net";
 import type { ImageStats } from "../../domain/values/image-stats.js";
 
 // Configuration
@@ -51,6 +53,31 @@ const BROWSER_HEADERS: Record<string, string> = {
   Accept: "image/webp,image/avif,image/*,*/*;q=0.8",
   "Accept-Language": "en-US,en;q=0.5",
 };
+
+function isPrivateIp(ip: string): boolean {
+  if (isIPv4(ip)) {
+    const parts = ip.split(".").map(Number);
+    const a = parts[0] ?? 0;
+    const b = parts[1] ?? 0;
+    return (
+      a === 127 || // 127.0.0.0/8 loopback
+      a === 10 || // 10.0.0.0/8
+      (a === 172 && b >= 16 && b <= 31) || // 172.16.0.0/12
+      (a === 192 && b === 168) || // 192.168.0.0/16
+      (a === 169 && b === 254) // 169.254.0.0/16 link-local
+    );
+  }
+  if (isIPv6(ip)) {
+    const lower = ip.toLowerCase();
+    return (
+      lower === "::1" || // loopback
+      lower.startsWith("fc") || // fc00::/7 unique local
+      lower.startsWith("fd") || // fc00::/7 unique local
+      lower.startsWith("fe80") // fe80::/10 link-local
+    );
+  }
+  return false;
+}
 
 interface DownloadedImage {
   url: string;
@@ -251,6 +278,30 @@ export class ImageProcessor {
     return { buffer: finalBuffer, format: finalFormat };
   }
 
+  private async validateUrl(url: string): Promise<void> {
+    let parsed: URL;
+    try {
+      parsed = new URL(url);
+    } catch {
+      throw new Error(`Invalid URL: ${url}`);
+    }
+
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      throw new Error(`Redirect to non-HTTP protocol: ${url}`);
+    }
+
+    // URL.hostname for IPv6 literals includes brackets: "[::1]" — strip them
+    // before passing to dns.lookup, which expects bare IP strings.
+    const hostname = parsed.hostname.replace(/^\[|\]$/g, "");
+
+    const { address } = await dnsLookup(hostname, { verbatim: false });
+    if (isPrivateIp(address)) {
+      throw new Error(
+        `Blocked: URL resolves to private IP address (${address})`,
+      );
+    }
+  }
+
   private async fetchWithTimeout(url: string): Promise<Buffer> {
     const controller = new AbortController();
     const timeout = setTimeout(
@@ -259,6 +310,8 @@ export class ImageProcessor {
     );
 
     try {
+      await this.validateUrl(url);
+
       const response = await fetch(url, {
         headers: BROWSER_HEADERS,
         signal: controller.signal,
