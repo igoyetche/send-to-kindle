@@ -12,6 +12,7 @@
     "cli": "tsx src/cli-entry.ts",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "sonar:local": "npm run test:coverage && sonar-scanner",
     "test:watch": "vitest",
     "test:email": "tsx scripts/test-email.ts",
     "lint": "eslint src test",
