@@ -1,8 +1,8 @@
 import { basename } from "node:path";
-import type { SendToKindleService } from "../domain/send-to-kindle-service.js";
+import type { DeliverySuccess, SendToKindleService } from "../domain/send-to-kindle-service.js";
 import type { DeviceRegistry } from "../domain/device-registry.js";
 import type { Author } from "../domain/values/author.js";
-import type { DeliveryError } from "../domain/errors.js";
+import type { DeliveryError, DomainError, Result } from "../domain/errors.js";
 import type { FrontmatterParser } from "../domain/ports.js";
 import { EpubDocument, MarkdownContent, MarkdownDocument } from "../domain/values/index.js";
 import { resolveTitle } from "../domain/title-resolver.js";
@@ -45,6 +45,49 @@ function isTransient(cause: DeliveryError["cause"]): boolean {
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Sends a document with exponential-backoff retry for transient SMTP failures.
+ * Handles success/failure logging and file movement.
+ */
+async function sendWithRetry(
+  filename: string,
+  filePath: string,
+  send: () => Promise<Result<DeliverySuccess, DomainError>>,
+  deps: WatcherDeps,
+): Promise<void> {
+  deps.logger.info(`Processing ${filename}...`);
+
+  let lastError: { kind: string; message: string } | undefined;
+
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    if (attempt > 0) {
+      const backoff = BASE_DELAY_MS * Math.pow(2, attempt - 1);
+      deps.logger.info(`Retry ${attempt}/${MAX_RETRIES} for ${filename} in ${backoff}ms`);
+      await delay(backoff);
+    }
+
+    const result = await send();
+
+    if (result.ok) {
+      deps.logger.info(`Sent ${filename} (${result.value.sizeBytes} bytes)`);
+      await deps.moveToSent(filePath);
+      return;
+    }
+
+    lastError = { kind: result.error.kind, message: result.error.message };
+
+    if (result.error.kind !== "delivery") break;
+    if (!isTransient(result.error.cause)) break;
+  }
+
+  deps.logger.error(`Failed to process ${filename}: ${lastError?.message ?? "unknown"}`);
+  await deps.moveToError(
+    filePath,
+    lastError?.kind ?? "unknown",
+    lastError?.message ?? "Unknown error",
+  );
 }
 
 /**
@@ -120,50 +163,12 @@ export async function processFile(
   }
 
   // Step 7: Send with retry for transient failures
-  deps.logger.info(`Processing ${filename}...`);
-
-  let lastError: { kind: string; message: string } | undefined;
-
-  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-    if (attempt > 0) {
-      const backoff = BASE_DELAY_MS * Math.pow(2, attempt - 1);
-      deps.logger.info(`Retry ${attempt}/${MAX_RETRIES} for ${filename} in ${backoff}ms`);
-      await delay(backoff);
-    }
-
-    // Build document with actual metadata from frontmatter
-    const document = MarkdownDocument.fromParts(contentResult.value, metadata);
-    const result = await deps.service.execute(
-      titleResult.value,
-      document,
-      deps.defaultAuthor,
-      deviceResult.value,
-    );
-
-    if (result.ok) {
-      deps.logger.info(`Sent ${filename} (${result.value.sizeBytes} bytes)`);
-      await deps.moveToSent(filePath);
-      return;
-    }
-
-    lastError = { kind: result.error.kind, message: result.error.message };
-
-    // Non-delivery errors: no retry
-    if (result.error.kind !== "delivery") {
-      break;
-    }
-
-    // Permanent delivery errors: no retry
-    if (!isTransient(result.error.cause)) {
-      break;
-    }
-  }
-
-  deps.logger.error(`Failed to process ${filename}: ${lastError?.message ?? "unknown"}`);
-  await deps.moveToError(
+  const document = MarkdownDocument.fromParts(contentResult.value, metadata);
+  await sendWithRetry(
+    filename,
     filePath,
-    lastError?.kind ?? "unknown",
-    lastError?.message ?? "Unknown error",
+    () => deps.service.execute(titleResult.value, document, deps.defaultAuthor, deviceResult.value),
+    deps,
   );
 }
 
@@ -206,46 +211,13 @@ export async function processEpubFile(
     return;
   }
 
-  const epub = new EpubDocument(titleResult.value.value, epubResult.buffer);
-
   // Step 4: Send with retry for transient failures
-  deps.logger.info(`Processing ${filename}...`);
-
-  let lastError: { kind: string; message: string } | undefined;
-
-  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-    if (attempt > 0) {
-      const backoff = BASE_DELAY_MS * Math.pow(2, attempt - 1);
-      deps.logger.info(`Retry ${attempt}/${MAX_RETRIES} for ${filename} in ${backoff}ms`);
-      await delay(backoff);
-    }
-
-    const result = await deps.service.sendEpub(epub, deviceResult.value);
-
-    if (result.ok) {
-      deps.logger.info(`Sent ${filename} (${result.value.sizeBytes} bytes)`);
-      await deps.moveToSent(filePath);
-      return;
-    }
-
-    lastError = { kind: result.error.kind, message: result.error.message };
-
-    // Non-delivery errors: no retry
-    if (result.error.kind !== "delivery") {
-      break;
-    }
-
-    // Permanent delivery errors: no retry
-    if (!isTransient(result.error.cause)) {
-      break;
-    }
-  }
-
-  deps.logger.error(`Failed to process ${filename}: ${lastError?.message ?? "unknown"}`);
-  await deps.moveToError(
+  const epub = new EpubDocument(titleResult.value.value, epubResult.buffer);
+  await sendWithRetry(
+    filename,
     filePath,
-    lastError?.kind ?? "unknown",
-    lastError?.message ?? "Unknown error",
+    () => deps.service.sendEpub(epub, deviceResult.value),
+    deps,
   );
 }
 

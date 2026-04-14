@@ -345,109 +345,70 @@ export interface CliDeps {
 }
 
 // ---------------------------------------------------------------------------
-// run
+// runEpubPath / runMarkdownPath (private)
 // ---------------------------------------------------------------------------
 
-/**
- * Orchestrates the full CLI lifecycle: parse → resolve content source → read
- * content → validate → send → report. Returns a POSIX exit code; never calls
- * process.exit itself.
- *
- * Implements FR-CLI-4
- */
-export async function run(deps: CliDeps): Promise<number> {
-  // Step 1: Parse args
-  const parsed = parseArgs(deps.argv);
-
-  // Step 2: Parse error → stderr + usage, exit 1
-  if (parsed.kind === "parse-error") {
-    deps.stderr(formatError(parsed.message));
-    deps.stderr(getUsageText());
-    return 1;
-  }
-
-  const args = parsed;
-
-  // Step 3: --help → usage, exit 0
-  if (args.help) {
-    deps.stderr(getUsageText());
-    return 0;
-  }
-
-  // Step 4: --version → version, exit 0
-  if (args.version) {
-    deps.stderr(deps.version);
-    return 0;
-  }
-
-  // Step 5: Resolve content source
-  const source = resolveContentSource(args, deps.isTTY);
-
-  // Step 6: Missing content source
-  if (source === "missing") {
-    deps.stderr(
-      "No content source provided. Use --file <path> to read from a file, or pipe Markdown content via stdin.",
-    );
-    return 1;
-  }
-
-  // Step 7a: EPUB passthrough — detect .epub extension and short-circuit
-  if (source.kind === "file" && source.path.toLowerCase().endsWith(".epub")) {
-    let epubResult: EpubReadResult;
-    try {
-      epubResult = await deps.readEpubFile(source.path);
-    } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : "Failed to read EPUB file.";
-      deps.stderr(formatError(message));
-      return 1;
-    }
-
-    const titleResult = resolveTitle([args.title || undefined, epubResult.suggestedTitle]);
-    if (!titleResult.ok) {
-      deps.stderr(formatError(titleResult.error.message));
-      return 1;
-    }
-
-    const authorRaw = args.author?.trim() ?? deps.defaultAuthor;
-    const authorResult = Author.create(authorRaw);
-    if (!authorResult.ok) {
-      deps.stderr(formatError(authorResult.error.message));
-      return 1;
-    }
-
-    const deviceResult = deps.devices.resolve(args.device);
-    if (!deviceResult.ok) {
-      deps.stderr(formatError(deviceResult.error.message));
-      return 1;
-    }
-
-    const epub = new EpubDocument(titleResult.value.value, epubResult.buffer);
-    const result = await deps.service.sendEpub(epub, deviceResult.value);
-    if (!result.ok) {
-      deps.stderr(formatError(result.error.message));
-      return mapErrorToExitCode(result.error);
-    }
-
-    deps.stderr(formatSuccess(result.value));
-    return 0;
-  }
-
-  // Step 7: Read content (Markdown path)
-  let rawContent: string;
+async function runEpubPath(
+  args: CliArgs,
+  filePath: string,
+  deps: CliDeps,
+): Promise<number> {
+  let epubResult: EpubReadResult;
   try {
-    if (source.kind === "file") {
-      rawContent = await deps.readFromFile(source.path);
-    } else {
-      rawContent = await deps.readFromStdin(deps.stdin);
-    }
+    epubResult = await deps.readEpubFile(filePath);
   } catch (e: unknown) {
-    const message =
-      e instanceof Error ? e.message : "Unknown error reading content.";
+    const message = e instanceof Error ? e.message : "Failed to read EPUB file.";
     deps.stderr(formatError(message));
     return 1;
   }
 
-  // Step 8: Empty content check
+  const titleResult = resolveTitle([args.title || undefined, epubResult.suggestedTitle]);
+  if (!titleResult.ok) {
+    deps.stderr(formatError(titleResult.error.message));
+    return 1;
+  }
+
+  const authorRaw = args.author?.trim() ?? deps.defaultAuthor;
+  const authorResult = Author.create(authorRaw);
+  if (!authorResult.ok) {
+    deps.stderr(formatError(authorResult.error.message));
+    return 1;
+  }
+
+  const deviceResult = deps.devices.resolve(args.device);
+  if (!deviceResult.ok) {
+    deps.stderr(formatError(deviceResult.error.message));
+    return 1;
+  }
+
+  const epub = new EpubDocument(titleResult.value.value, epubResult.buffer);
+  const result = await deps.service.sendEpub(epub, deviceResult.value);
+  if (!result.ok) {
+    deps.stderr(formatError(result.error.message));
+    return mapErrorToExitCode(result.error);
+  }
+
+  deps.stderr(formatSuccess(result.value));
+  return 0;
+}
+
+async function runMarkdownPath(
+  args: CliArgs,
+  source: ContentSource,
+  deps: CliDeps,
+): Promise<number> {
+  let rawContent: string;
+  try {
+    rawContent =
+      source.kind === "file"
+        ? await deps.readFromFile(source.path)
+        : await deps.readFromStdin(deps.stdin);
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : "Unknown error reading content.";
+    deps.stderr(formatError(message));
+    return 1;
+  }
+
   if (rawContent.length === 0) {
     const emptyMessage =
       source.kind === "file"
@@ -457,7 +418,6 @@ export async function run(deps: CliDeps): Promise<number> {
     return 1;
   }
 
-  // Step 9: Parse frontmatter
   const parseResult = deps.frontmatterParser.parse(rawContent);
   if (!parseResult.ok) {
     deps.stderr(formatError(parseResult.error.message));
@@ -465,21 +425,15 @@ export async function run(deps: CliDeps): Promise<number> {
   }
   const { metadata, body } = parseResult.value;
 
-  // Step 10: Create MarkdownContent from stripped body
   const contentResult = MarkdownContent.create(body);
   if (!contentResult.ok) {
     deps.stderr(formatError(contentResult.error.message));
     return mapErrorToExitCode(contentResult.error);
   }
 
-  // Step 11: Resolve title from multiple sources
   const titleCandidates =
     source.kind === "file"
-      ? [
-          args.title || undefined,
-          metadata.title,
-          source.path.replace(/\.md$/i, ""),
-        ]
+      ? [args.title || undefined, metadata.title, source.path.replace(/\.md$/i, "")]
       : [args.title || undefined, metadata.title];
 
   const titleResult = resolveTitle(titleCandidates);
@@ -488,7 +442,6 @@ export async function run(deps: CliDeps): Promise<number> {
     return mapErrorToExitCode(titleResult.error);
   }
 
-  // Step 12: Create value objects
   const authorRaw = args.author?.trim() ?? deps.defaultAuthor;
   const authorResult = Author.create(authorRaw);
   if (!authorResult.ok) {
@@ -496,14 +449,12 @@ export async function run(deps: CliDeps): Promise<number> {
     return mapErrorToExitCode(authorResult.error);
   }
 
-  // Step 13: Resolve device
   const deviceResult = deps.devices.resolve(args.device);
   if (!deviceResult.ok) {
     deps.stderr(formatError(deviceResult.error.message));
     return 1;
   }
 
-  // Step 14 & 15: Build document and execute service
   const document = MarkdownDocument.fromParts(contentResult.value, metadata);
   const result = await deps.service.execute(
     titleResult.value,
@@ -517,7 +468,52 @@ export async function run(deps: CliDeps): Promise<number> {
     return mapErrorToExitCode(result.error);
   }
 
-  // Step 13: Success
   deps.stderr(formatSuccess(result.value));
   return 0;
+}
+
+// ---------------------------------------------------------------------------
+// run
+// ---------------------------------------------------------------------------
+
+/**
+ * Orchestrates the full CLI lifecycle: parse → resolve content source → read
+ * content → validate → send → report. Returns a POSIX exit code; never calls
+ * process.exit itself.
+ *
+ * Implements FR-CLI-4
+ */
+export async function run(deps: CliDeps): Promise<number> {
+  const parsed = parseArgs(deps.argv);
+
+  if (parsed.kind === "parse-error") {
+    deps.stderr(formatError(parsed.message));
+    deps.stderr(getUsageText());
+    return 1;
+  }
+
+  if (parsed.help) {
+    deps.stderr(getUsageText());
+    return 0;
+  }
+
+  if (parsed.version) {
+    deps.stderr(deps.version);
+    return 0;
+  }
+
+  const source = resolveContentSource(parsed, deps.isTTY);
+
+  if (source === "missing") {
+    deps.stderr(
+      "No content source provided. Use --file <path> to read from a file, or pipe Markdown content via stdin.",
+    );
+    return 1;
+  }
+
+  if (source.kind === "file" && source.path.toLowerCase().endsWith(".epub")) {
+    return runEpubPath(parsed, source.path, deps);
+  }
+
+  return runMarkdownPath(parsed, source, deps);
 }

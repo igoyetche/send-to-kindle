@@ -21,10 +21,10 @@ import { dirname } from "node:path";
 export function loadDotenv(
   warn: (message: string) => void = () => {},
 ): void {
-  dotenv.config(); // CWD/.env — silently skips if absent
+  dotenv.config({ quiet: true }); // CWD/.env — silently skips if absent
 
   const fallbackPath = join(homedir(), ".paperboy", ".env");
-  const fallbackResult = dotenv.config({ path: fallbackPath });
+  const fallbackResult = dotenv.config({ path: fallbackPath, quiet: true });
 
   if (fallbackResult.error) {
     const code: unknown = "code" in fallbackResult.error
@@ -41,7 +41,7 @@ export function loadDotenv(
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = dirname(__filename);
   const distExamplePath = join(__dirname, "..", "..", "dist", ".env.example");
-  const distExampleResult = dotenv.config({ path: distExamplePath });
+  const distExampleResult = dotenv.config({ path: distExamplePath, quiet: true });
 
   if (distExampleResult.error) {
     const code: unknown = "code" in distExampleResult.error
