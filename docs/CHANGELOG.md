@@ -4,6 +4,20 @@ Tracks every change to specs, designs, and plans that deviates from the original
 
 ---
 
+## 2026-04-15 — PB-014 Complete: SonarQube CI Workflow
+
+### Feature Completed
+- **`sonar-project.properties`**: Configures SonarCloud project key (`igoyetche_send-to-kindle`), TypeScript sources, test directory, and lcov coverage path.
+- **`npm run sonar:local`**: One-command local scan — runs `test:coverage` (generates `coverage/lcov.info`) then `sonar-scanner`. Results appear on SonarCloud dashboard without a GitHub push.
+- **`/check-pr` global command**: `~/.claude/commands/check-pr.md` — reusable across all projects. Fetches CI check statuses via `gh pr checks`, extracts build errors via `gh run view --log-failed`, parses the SonarCloud bot comment. Reports findings and waits for per-issue instructions before acting.
+- **CLAUDE.md**: Pre-PR checklist gains a SonarQube scan step; new "Checking a PR After Creation" section documents the `/check-pr` command.
+- **`tsconfig.eslint.json`**: Added `vitest.config.ts` to include list so lint-staged can lint it without errors.
+
+### No Spec Changes
+No changes to `docs/specs/main-spec.md` — this feature affects the development workflow only, not the application behaviour.
+
+---
+
 ## 2026-04-14 — PB-012 Complete: Accept EPUB Files Without Transformation
 
 ### Feature Completed

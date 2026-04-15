@@ -1,7 +1,7 @@
 # PB-014: Add SonarQube to GitHub Actions
 
-**Status:** Active
-**Date:** 2026-04-01
+**Status:** Complete
+**Completed:** 2026-04-15
 
 ## Motivation
 
@@ -16,15 +16,15 @@ Static analysis catches code quality issues, security vulnerabilities, and code 
 
 ## Acceptance Criteria
 
-- [ ] `sonar-project.properties` is committed with correct project key, sources, and coverage path
-- [ ] `npm run sonar:local` generates lcov coverage and runs sonar-scanner, sending results to SonarCloud
-- [ ] `.env.example` documents `SONAR_TOKEN`
-- [ ] Vitest config emits `lcov` report in addition to existing reporters
-- [ ] CLAUDE.md pre-PR checklist includes `npm run sonar:local` step
-- [ ] `/check-pr` global command exists at `~/.claude/commands/check-pr.md`
-- [ ] `/check-pr` fetches CI check statuses and SonarCloud bot comment for the current branch's PR
-- [ ] `/check-pr` reports build failures with log excerpts and proposes fixes before acting
-- [ ] `/check-pr` reports SonarCloud issues by type and waits for user instruction on each
+- [x] `sonar-project.properties` is committed with correct project key, sources, and coverage path
+- [x] `npm run sonar:local` generates lcov coverage and runs sonar-scanner, sending results to SonarCloud
+- [x] `.env.example` documents `SONAR_TOKEN`
+- [x] Vitest config emits `lcov` report in addition to existing reporters
+- [x] CLAUDE.md pre-PR checklist includes `npm run sonar:local` step
+- [x] `/check-pr` global command exists at `~/.claude/commands/check-pr.md`
+- [x] `/check-pr` fetches CI check statuses and SonarCloud bot comment for the current branch's PR
+- [x] `/check-pr` reports build failures with log excerpts and proposes fixes before acting
+- [x] `/check-pr` reports SonarCloud issues by type and waits for user instruction on each
 
 ## Out of Scope
 
