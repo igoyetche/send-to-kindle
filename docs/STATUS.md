@@ -16,7 +16,7 @@
 | PB-011 | Encrypted Configuration Storage | Feature | specs/main-spec.md | — | High |
 | PB-006 | Trusted HTTPS Certificate | Design | specs/main-spec.md | — | Medium |
 | PB-007 | Interactive Setup Wizard | Feature | specs/main-spec.md | — | High |
-| PB-008 | EPUB Cover Generation | Feature | specs/main-spec.md | — | Medium |
+| PB-008 | EPUB Cover Generation | 🔄 In Progress | specs/main-spec.md | plans/backlog/PB-008-epub-cover.md | Medium |
 | PB-013 | Watcher File Logs | Feature | — | — | Low |
 
 ## Completed
