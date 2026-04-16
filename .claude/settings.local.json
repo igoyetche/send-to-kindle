@@ -1,6 +1,5 @@
 {
   "permissions": {
-    "defaultMode": "acceptEdits",
     "allow": [
       "WebSearch",
       "WebFetch(domain:www.npmjs.com)",
@@ -30,8 +29,11 @@
       "Bash(gh pr:*)",
       "Bash(grep -l \"\\\\.execute\\\\|toEpub\" test/**/*.ts test/**/**/*.ts)",
       "Bash(where sonar-scanner *)",
-      "Bash(cmd *)"
-    ]
+      "Bash(npx sonar-scanner *)",
+      "Bash(sonar *)",
+      "Bash(tee sonar-secrets-output.txt)"
+    ],
+    "defaultMode": "acceptEdits"
   },
   "hooks": {
     "PostToolUse": [
