@@ -1,5 +1,6 @@
 {
   "permissions": {
+    "defaultMode": "acceptEdits",
     "allow": [
       "WebSearch",
       "WebFetch(domain:www.npmjs.com)",
@@ -27,7 +28,9 @@
       "Bash(node:*)",
       "Bash(ls:*)",
       "Bash(gh pr:*)",
-      "Bash(grep -l \"\\\\.execute\\\\|toEpub\" test/**/*.ts test/**/**/*.ts)"
+      "Bash(grep -l \"\\\\.execute\\\\|toEpub\" test/**/*.ts test/**/**/*.ts)",
+      "Bash(where sonar-scanner *)",
+      "Bash(cmd *)"
     ]
   },
   "hooks": {

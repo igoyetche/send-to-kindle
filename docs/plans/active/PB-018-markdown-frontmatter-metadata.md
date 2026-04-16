@@ -58,28 +58,34 @@ Parse YAML frontmatter from Markdown files, make `title` optional across all ent
 
 ### Phase 4 — CLI adapter
 
-- [ ] **T-16**: Update `parseArgs()` in `src/application/cli.ts`:
+- [x] **T-16**: Update `parseArgs()` in `src/application/cli.ts`:
   - Remove the hard `title === undefined` validation error
   - Change `CliArgs.title` from `string` to `string | undefined`
-- [ ] **T-17**: Update `CliDeps` interface: add `frontmatterParser: FrontmatterParser`.
-- [ ] **T-18**: Update `run()` in `src/application/cli.ts`:
+  (2026-04-16)
+- [x] **T-17**: Update `CliDeps` interface: add `frontmatterParser: FrontmatterParser`.
+  (2026-04-16)
+- [x] **T-18**: Update `run()` in `src/application/cli.ts`:
   1. After reading raw content, call `deps.frontmatterParser.parse(raw)` → `{ metadata, body }` or `FrontmatterError`
   2. On `FrontmatterError`: write error to stderr, return exit code 1
   3. `MarkdownContent.create(body)` on stripped body
   4. Build title candidates based on source: file → `[args.title, metadata.title, filenameStem]`; stdin → `[args.title, metadata.title]`
   5. `resolveTitle(candidates)` → `Title` or validation error
   6. Build `MarkdownDocument.fromParts(content, metadata)` and call service
-- [ ] **T-19**: Update `mapErrorToExitCode()`: add `case "frontmatter": return 1`.
-- [ ] **T-20**: Update `getUsageText()`: mark `--title` as optional, add brief note about frontmatter fallback.
-- [ ] **T-21**: Write/update CLI unit tests:
-  - `parseArgs` accepts missing `--title` without error
-  - `run` with `--file` and frontmatter → title from metadata (explicit arg absent)
-  - `run` with `--file`, no frontmatter → title from filename stem
-  - `run` with `--file`, `--title` override → explicit wins over metadata
-  - `run` with stdin + frontmatter → metadata title used
-  - `run` with stdin, no frontmatter, no `--title` → exit 1, error message
-  - `run` with malformed frontmatter → exit 1, error message
-  - `mapErrorToExitCode` with `FrontmatterError` → 1
+  (2026-04-16)
+- [x] **T-19**: Update `mapErrorToExitCode()`: add `case "frontmatter": return 1`.
+  (2026-04-16)
+- [x] **T-20**: Update `getUsageText()`: mark `--title` as optional, add brief note about frontmatter fallback.
+  (2026-04-16)
+- [x] **T-21**: Write/update CLI unit tests:
+  - `parseArgs` accepts missing `--title` without error ✓
+  - `run` with `--file` and frontmatter → title from metadata (explicit arg absent) ✓
+  - `run` with `--file`, no frontmatter → title from filename stem ✓
+  - `run` with `--file`, `--title` override → explicit wins over metadata ✓
+  - `run` with stdin + frontmatter → metadata title used ✓
+  - `run` with stdin, no frontmatter, no `--title` → exit 1, error message ✓
+  - `run` with malformed frontmatter → exit 1, error message ✓
+  - `mapErrorToExitCode` with `FrontmatterError` → 1 ✓
+  (2026-04-16)
 
 ### Phase 5 — MCP adapter
 

@@ -22,7 +22,7 @@ import { resolveTitle } from "../domain/title-resolver.js";
 
 export interface CliArgs {
   readonly kind: "args";
-  readonly title: string;
+  readonly title: string | undefined;
   readonly filePath: string | undefined;
   readonly author: string | undefined;
   readonly device: string | undefined;
@@ -57,7 +57,7 @@ const BOOLEAN_FLAGS = new Set(["--help", "--version"]);
 /**
  * Parses a pre-sliced argv array (no argv[0]/argv[1]) into CliArgs or ParseError.
  * Unknown flags → ParseError. Flag without value → ParseError.
- * Empty argv → ParseError about missing --title (unless --help or --version).
+ * Title is now optional; resolved from frontmatter, filename, or explicit arg in run().
  *
  * Implements FR-CLI-1
  */
@@ -140,7 +140,7 @@ export function parseArgs(
   if (help || version) {
     return {
       kind: "args",
-      title: title ?? "",
+      title,
       filePath,
       author,
       device,
@@ -152,7 +152,7 @@ export function parseArgs(
   // Title is now optional and resolved from multiple sources in run()
   return {
     kind: "args",
-    title: title ?? "",
+    title,
     filePath,
     author,
     device,
