@@ -90,7 +90,7 @@ git -C /c/projects/experiments/paperboy/.worktrees/pb-008-epub-cover commit -m "
 
 Write the failing tests first, then implement.
 
-- [ ] **Step 2.1: Write the failing tests for `wrapTitle` and `generateHtmlChapter`**
+- [x] **Step 2.1: Write the failing tests for `wrapTitle` and `generateHtmlChapter`** (2026-04-15)
 
 Create `test/infrastructure/converter/cover-generator.test.ts`:
 
@@ -186,7 +186,7 @@ describe("CoverGenerator.generateHtmlChapter", () => {
 });
 ```
 
-- [ ] **Step 2.2: Run the tests to confirm they fail**
+- [x] **Step 2.2: Run the tests to confirm they fail** (2026-04-15)
 
 ```bash
 cd /c/projects/experiments/paperboy/.worktrees/pb-008-epub-cover && npm test -- --reporter=verbose test/infrastructure/converter/cover-generator.test.ts 2>&1 | tail -20
@@ -194,7 +194,7 @@ cd /c/projects/experiments/paperboy/.worktrees/pb-008-epub-cover && npm test -- 
 
 Expected: Tests fail with `Cannot find module` or import errors.
 
-- [ ] **Step 2.3: Create `src/infrastructure/converter/cover-generator.ts` with wrapTitle and generateHtmlChapter**
+- [x] **Step 2.3: Create `src/infrastructure/converter/cover-generator.ts` with wrapTitle and generateHtmlChapter** (2026-04-15)
 
 ```typescript
 import { readFileSync } from "node:fs";
@@ -361,7 +361,7 @@ export class CoverGenerator {
 }
 ```
 
-- [ ] **Step 2.4: Run the HTML chapter tests to confirm they pass**
+- [x] **Step 2.4: Run the HTML chapter tests to confirm they pass** (2026-04-15)
 
 ```bash
 cd /c/projects/experiments/paperboy/.worktrees/pb-008-epub-cover && npm test -- --reporter=verbose test/infrastructure/converter/cover-generator.test.ts 2>&1 | tail -30
@@ -369,7 +369,7 @@ cd /c/projects/experiments/paperboy/.worktrees/pb-008-epub-cover && npm test -- 
 
 Expected: All `wrapTitle` and `generateHtmlChapter` tests pass. The `generateImage` tests do not exist yet.
 
-- [ ] **Step 2.5: Commit**
+- [x] **Step 2.5: Commit** (2026-04-15)
 
 ```bash
 git -C /c/projects/experiments/paperboy/.worktrees/pb-008-epub-cover add src/infrastructure/converter/cover-generator.ts test/infrastructure/converter/cover-generator.test.ts

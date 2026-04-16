@@ -18,7 +18,7 @@ describe("wrapTitle", () => {
     lines.forEach((line) => expect(line.length).toBeLessThanOrEqual(30));
   });
 
-  it("truncates with ellipsis when title needs more than 3 lines", () => {
+  it("appends ellipsis when all available lines are consumed by wrapping", () => {
     const veryLong =
       "This is an extremely long title that would need four or more lines to display";
     const lines = wrapTitle(veryLong);
