@@ -33,7 +33,7 @@
 **Files:**
 - Create: `src/infrastructure/converter/assets/cover-icon.png`
 
-- [ ] **Step 1.1: Create the assets directory and generate the placeholder PNG**
+- [x] **Step 1.1: Create the assets directory and generate the placeholder PNG** (2026-04-15)
 
 Run this script from within the worktree directory (`C:/projects/experiments/paperboy/.worktrees/pb-008-epub-cover`):
 
@@ -65,7 +65,7 @@ SCRIPT
 
 Expected output: `Created: .../src/infrastructure/converter/assets/cover-icon.png (NNN bytes)`
 
-- [ ] **Step 1.2: Verify the file was created**
+- [x] **Step 1.2: Verify the file was created** (2026-04-15)
 
 ```bash
 ls -la /c/projects/experiments/paperboy/.worktrees/pb-008-epub-cover/src/infrastructure/converter/assets/
@@ -73,7 +73,7 @@ ls -la /c/projects/experiments/paperboy/.worktrees/pb-008-epub-cover/src/infrast
 
 Expected: `cover-icon.png` exists with size > 0.
 
-- [ ] **Step 1.3: Commit**
+- [x] **Step 1.3: Commit** (2026-04-15)
 
 ```bash
 git -C /c/projects/experiments/paperboy/.worktrees/pb-008-epub-cover add src/infrastructure/converter/assets/cover-icon.png
