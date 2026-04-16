@@ -1,9 +1,10 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import JSZip from "jszip";
 import { ImageProcessor, type ImageProcessorLogger } from "../../src/infrastructure/converter/image-processor.js";
 import { MarkdownEpubConverter } from "../../src/infrastructure/converter/markdown-epub-converter.js";
+import type { CoverGenerator } from "../../src/infrastructure/converter/cover-generator.js";
 import { Title } from "../../src/domain/values/title.js";
 import { Author } from "../../src/domain/values/author.js";
 import { MarkdownContent } from "../../src/domain/values/markdown-content.js";
@@ -44,6 +45,13 @@ class DiagnosticLogger implements ImageProcessorLogger {
     // Silent
   }
 }
+
+// Fake CoverGenerator — avoids running sharp in integration tests
+const fakeCoverGenerator: CoverGenerator = {
+  // eslint-disable-next-line @typescript-eslint/require-await
+  generateImage: vi.fn(async () => Buffer.from([0xff, 0xd8, 0xff])),
+  generateHtmlChapter: vi.fn(() => "<div>cover</div>"),
+};
 
 /**
  * Real-world integration test using the George Mack article.
@@ -302,7 +310,7 @@ describe("Image downloading with real sample file", () => {
         diagnosticLogger,
       );
 
-      const converter = new MarkdownEpubConverter(processor);
+      const converter = new MarkdownEpubConverter(processor, fakeCoverGenerator);
 
       // Generate EPUB
       const document = MarkdownDocument.fromParts(contentResult.value, DocumentMetadata.empty());

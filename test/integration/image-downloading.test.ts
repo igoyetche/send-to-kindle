@@ -1,6 +1,7 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { MarkdownEpubConverter } from "../../src/infrastructure/converter/markdown-epub-converter.js";
 import { ImageProcessor } from "../../src/infrastructure/converter/image-processor.js";
+import type { CoverGenerator } from "../../src/infrastructure/converter/cover-generator.js";
 import { createPinoLogger, createImageProcessorLogger } from "../../src/infrastructure/logger.js";
 import { Title } from "../../src/domain/values/title.js";
 import { Author } from "../../src/domain/values/author.js";
@@ -32,6 +33,13 @@ function makeDocument(v: string) {
   return MarkdownDocument.fromParts(content, metadata);
 }
 
+// Fake CoverGenerator — avoids running sharp in integration tests
+const fakeCoverGenerator: CoverGenerator = {
+  // eslint-disable-next-line @typescript-eslint/require-await
+  generateImage: vi.fn(async () => Buffer.from([0xff, 0xd8, 0xff])),
+  generateHtmlChapter: vi.fn(() => "<div>cover</div>"),
+};
+
 describe.skip("Image downloading integration", () => {
   // These tests require network access and real image downloads.
   // Skip by default; run with `npm test -- --reporter=verbose` to include them.
@@ -49,7 +57,7 @@ describe.skip("Image downloading integration", () => {
     const logger = createPinoLogger("silent");
     const imageProcessorLogger = createImageProcessorLogger(logger);
     const imageProcessor = new ImageProcessor(config, imageProcessorLogger);
-    const converter = new MarkdownEpubConverter(imageProcessor);
+    const converter = new MarkdownEpubConverter(imageProcessor, fakeCoverGenerator);
 
     // Simple markdown with a real, small image
     const markdown = `
@@ -92,7 +100,7 @@ The image should be embedded in the EPUB.
     const logger = createPinoLogger("silent");
     const imageProcessorLogger = createImageProcessorLogger(logger);
     const imageProcessor = new ImageProcessor(config, imageProcessorLogger);
-    const converter = new MarkdownEpubConverter(imageProcessor);
+    const converter = new MarkdownEpubConverter(imageProcessor, fakeCoverGenerator);
 
     const markdown = `
 # Document with Multiple Images
@@ -137,7 +145,7 @@ More text.
     const logger = createPinoLogger("silent");
     const imageProcessorLogger = createImageProcessorLogger(logger);
     const imageProcessor = new ImageProcessor(config, imageProcessorLogger);
-    const converter = new MarkdownEpubConverter(imageProcessor);
+    const converter = new MarkdownEpubConverter(imageProcessor, fakeCoverGenerator);
 
     const markdown = `
 # Document with Broken Image
@@ -186,7 +194,7 @@ describe("Image downloading (text-only fallback)", () => {
     const logger = createPinoLogger("silent");
     const imageProcessorLogger = createImageProcessorLogger(logger);
     const imageProcessor = new ImageProcessor(config, imageProcessorLogger);
-    const converter = new MarkdownEpubConverter(imageProcessor);
+    const converter = new MarkdownEpubConverter(imageProcessor, fakeCoverGenerator);
 
     const markdown = `
 # Text-Only Document
