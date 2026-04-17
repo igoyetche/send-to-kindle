@@ -91,9 +91,10 @@ describe("CoverGenerator.generateHtmlChapter", () => {
     expect(html).toContain("Author &quot;Quoted&quot;");
   });
 
-  it("includes an img tag for the icon", () => {
+  it("embeds the icon as a CSS background-image, not an img tag", () => {
     const html = generator.generateHtmlChapter("Title", "Claude");
-    expect(html).toContain("<img");
+    expect(html).not.toContain("<img");
+    expect(html).toContain("background-image");
     expect(html).toContain("data:image/png;base64,");
   });
 });

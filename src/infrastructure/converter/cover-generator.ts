@@ -147,7 +147,7 @@ export class CoverGenerator {
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: #1e1e2e; min-height: 100vh; display: flex; align-items: center; justify-content: center; font-family: sans-serif; }
   .cover { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 60px 40px; max-width: 500px; }
-  .icon { width: 120px; height: 120px; margin-bottom: 36px; }
+  .icon { width: 120px; height: 120px; margin-bottom: 36px; background-image: url('${iconDataUri}'); background-size: contain; background-repeat: no-repeat; background-position: center; }
   .title { color: #cdd6f4; font-size: 1.8em; font-weight: bold; line-height: 1.3; margin-bottom: 16px; }
   .author { color: #a6adc8; font-size: 1em; }
   .source { color: #6c7086; font-size: 0.8em; margin-top: 40px; }
@@ -155,7 +155,7 @@ export class CoverGenerator {
 </head>
 <body>
 <div class="cover">
-  <img class="icon" src="${iconDataUri}" alt="Paperboy"/>
+  <div class="icon" role="img" aria-label="Paperboy"></div>
   <h1 class="title">${escapeXml(title)}</h1>
   <p class="author">${escapeXml(author)}</p>
   ${sourceHtml}
