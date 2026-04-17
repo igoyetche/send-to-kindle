@@ -111,6 +111,10 @@ export function createEpubWithPredownloadedImages(
     // Write image files with UUID-based filenames
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     for (const image of this.images) {
+      // Skip data URI phantom entries — see guard in assignment loop above
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      if (typeof image.url === "string" && image.url.startsWith("data:")) continue;
+
       // Extract filename from href (contains the UUID that HTML references)
       // href format: "images/uuid.extension"
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
