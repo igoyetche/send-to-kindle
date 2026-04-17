@@ -1,6 +1,6 @@
 # Project Status Dashboard
 
-> Last updated: 2026-04-15
+> Last updated: 2026-04-16
 > Last ticket code: PB-020
 
 ## Active Work
@@ -8,6 +8,7 @@
 | Code | Feature | Phase | Specs Affected | Plan | Priority |
 |------|---------|---|---|---|---|
 | PB-018 | Markdown Frontmatter Metadata | 🔄 In Progress | specs/main-spec.md | plans/active/PB-018-markdown-frontmatter-metadata.md | Medium |
+| PB-008 | EPUB Cover Generation | 🔄 In Progress | specs/main-spec.md | plans/active/PB-008-epub-cover.md | Medium |
 
 ## Backlog
 
@@ -16,7 +17,6 @@
 | PB-011 | Encrypted Configuration Storage | Feature | specs/main-spec.md | — | High |
 | PB-006 | Trusted HTTPS Certificate | Design | specs/main-spec.md | — | Medium |
 | PB-007 | Interactive Setup Wizard | Feature | specs/main-spec.md | — | High |
-| PB-008 | EPUB Cover Generation | Feature | specs/main-spec.md | — | Medium |
 | PB-013 | Watcher File Logs | Feature | — | — | Low |
 
 ## Completed

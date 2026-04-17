@@ -33,7 +33,7 @@ const EPubClass = (epubModule as any).EPub;
  *
  * This ensures downloaded image buffers are paired with the correct UUID paths.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 export function createEpubWithPredownloadedImages(
   options: unknown,
   chapters: unknown,
@@ -42,8 +42,8 @@ export function createEpubWithPredownloadedImages(
   const epub = new EPubClass(options, chapters);
 
   // Override downloadAllImages to match pre-downloaded images to detected URLs
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-  (epub as any).downloadAllImages = function (): void {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  (epub).downloadAllImages = function (): void {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     if (!this.images || !this.images.length) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
@@ -55,8 +55,8 @@ export function createEpubWithPredownloadedImages(
     this.log?.("Embedding pre-downloaded images (skipping network download)");
 
     // Get the buffer map that was attached by the converter
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-    const imageBufferMap = (this as any).__imageBufferMap as Map<
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const imageBufferMap = (this).__imageBufferMap as Map<
       string,
       { buffer: Buffer; format: string }
     > | undefined;
@@ -68,6 +68,10 @@ export function createEpubWithPredownloadedImages(
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       for (const image of this.images) {
+        // epub-gen-memory processes all <img> src attrs including data: URIs — skip them
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        if (typeof image.url === "string" && image.url.startsWith("data:")) continue;
+
         // Try exact filename match first
         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
         let bufferData = imageBufferMap.get(image.filename || "");
@@ -107,6 +111,10 @@ export function createEpubWithPredownloadedImages(
     // Write image files with UUID-based filenames
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     for (const image of this.images) {
+      // Skip data URI phantom entries — see guard in assignment loop above
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      if (typeof image.url === "string" && image.url.startsWith("data:")) continue;
+
       // Extract filename from href (contains the UUID that HTML references)
       // href format: "images/uuid.extension"
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment

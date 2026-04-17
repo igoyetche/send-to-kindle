@@ -4,6 +4,16 @@ Tracks every change to specs, designs, and plans that deviates from the original
 
 ---
 
+## 2026-04-15 — PB-008: EPUB Cover Generation — Spec update
+
+**Changed:** FR-5 updated — EPUB output now includes cover image + cover chapter (previously "single content chapter").
+
+**Added:** FR-36 — Cover JPEG image (600×900 px) embedded in EPUB manifest for Kindle library thumbnail. Generated automatically from title and author via SVG → sharp → JPEG.
+
+**Added:** FR-37 — Cover HTML chapter as first page of document. Displays paperboy icon, title, author, and source domain (from frontmatter `url`, hostname only). Source domain appears only in the chapter, not on the thumbnail.
+
+---
+
 ## 2026-04-15 — PB-014 Complete: SonarQube CI Workflow
 
 ### Feature Completed

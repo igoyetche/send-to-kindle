@@ -1,9 +1,10 @@
 ---
 code: PB-008
 title: EPUB Cover Generation
-status: Backlog
+status: Active
 priority: Medium
 created: 2026-03-19
+activated: 2026-04-15
 ---
 
 # PB-008 — EPUB Cover Generation
@@ -30,7 +31,7 @@ Generate a cover automatically from the document's title and author at conversio
 - Custom fonts or branding
 - Cover preview in CLI output
 
-## Open Questions
+## Open Questions (Resolved)
 
-- **OQ-1**: HTML cover chapter vs. image cover — which approach to implement? (see design doc)
-- **OQ-2**: Should the cover include any decorative elements beyond title and author (e.g., date, divider)?
+- **OQ-1**: HTML cover chapter vs. image cover → **Both**: JPEG thumbnail for Kindle library, styled HTML chapter for first page
+- **OQ-2**: Decorative elements → source domain (HTML chapter only), paperboy icon PNG (placeholder until real icon provided)

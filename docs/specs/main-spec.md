@@ -75,8 +75,12 @@ A user working with an AI assistant (Claude) frequently generates long-form cont
 
 ### Content Conversion
 
+> Updated 2026-04-15 via feature: PB-008
+
 - **FR-4**: The system must convert Markdown input to a valid EPUB document
-- **FR-5**: The EPUB output must be a valid EPUB 3.0 package containing title and author metadata and a single content chapter
+- **FR-5**: The EPUB output must be a valid EPUB 3.0 package containing title and author metadata, a cover image, a cover chapter, and a content chapter
+- **FR-36**: Every EPUB produced by the system must include a cover image (JPEG, 600×900 px) embedded in the EPUB manifest for display as a library thumbnail in Kindle. The cover is generated automatically from the document title and author — no user-supplied image or configuration is required.
+- **FR-37**: Every EPUB produced by the system must include a styled cover chapter as the first page of the document. The cover chapter displays: the paperboy icon, the document title, the author, and — when a `url` field is present in frontmatter — the source domain (hostname only, e.g., `theverge.com`). The source domain is not displayed on the cover image thumbnail.
 - **FR-6**: The EPUB output must preserve Markdown structure (headings, lists, emphasis, code blocks, links) as semantically appropriate EPUB/XHTML markup
 
 ### Image Handling

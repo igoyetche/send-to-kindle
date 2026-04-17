@@ -6,6 +6,7 @@ import { loadConfig } from "./infrastructure/config.js";
 import { createPinoLogger, createDeliveryLogger, createImageProcessorLogger } from "./infrastructure/logger.js";
 import { MarkdownEpubConverter } from "./infrastructure/converter/markdown-epub-converter.js";
 import { ImageProcessor } from "./infrastructure/converter/image-processor.js";
+import { CoverGenerator } from "./infrastructure/converter/cover-generator.js";
 import { SmtpMailer } from "./infrastructure/mailer/smtp-mailer.js";
 import { SendToKindleService } from "./domain/send-to-kindle-service.js";
 import { ToolHandler } from "./application/tool-handler.js";
@@ -17,7 +18,8 @@ const deliveryLogger = createDeliveryLogger(pinoLogger);
 const imageProcessorLogger = createImageProcessorLogger(pinoLogger);
 
 const imageProcessor = new ImageProcessor(config.image, imageProcessorLogger);
-const converter = new MarkdownEpubConverter(imageProcessor);
+const coverGenerator = new CoverGenerator();
+const converter = new MarkdownEpubConverter(imageProcessor, coverGenerator);
 const mailer = new SmtpMailer({
   sender: config.sender,
   smtp: config.smtp,
