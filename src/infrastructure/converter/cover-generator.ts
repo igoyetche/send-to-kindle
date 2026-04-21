@@ -137,31 +137,27 @@ export class CoverGenerator {
         ? `<p class="source">${escapeXml(domain)}</p>`
         : "";
 
-    return `<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
-<head>
-<meta charset="UTF-8"/>
-<title>${escapeXml(title)}</title>
-<style type="text/css">
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #1e1e2e; min-height: 100vh; display: flex; align-items: center; justify-content: center; font-family: sans-serif; }
-  .cover { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 60px 40px; max-width: 500px; }
-  .icon { width: 120px; height: 120px; margin-bottom: 36px; background-image: url('${iconDataUri}'); background-size: contain; background-repeat: no-repeat; background-position: center; }
-  .title { color: #cdd6f4; font-size: 1.8em; font-weight: bold; line-height: 1.3; margin-bottom: 16px; }
-  .author { color: #a6adc8; font-size: 1em; }
-  .source { color: #6c7086; font-size: 0.8em; margin-top: 40px; }
+    // epub-gen-memory strips <head>/<style> and embeds only the body fragment.
+    // A <style> block placed at the top of the content survives fixHTML intact
+    // and is applied by Kindle's parser even when inside <body>.
+    return `<style type="text/css">
+body { background: #f5efe4; margin: 0; padding: 0; font-family: Georgia, serif; }
+.cover { background: #f5efe4; text-align: center; padding: 60px 20px; }
+.kicker { color: #a03020; font-size: 0.75em; font-weight: bold; letter-spacing: 0.4em; text-transform: uppercase; margin-bottom: 24px; }
+.title { color: #1a1a1a; font-size: 2.2em; font-weight: bold; line-height: 1.25; margin-bottom: 20px; }
+.rule { width: 100px; height: 2px; background: #a03020; margin: 0 auto 20px; }
+.author { color: #4a4a4a; font-size: 1.4em; font-style: italic; }
+.icon { width: 240px; height: 240px; margin: 48px auto 0; background-image: url('${iconDataUri}'); background-size: contain; background-repeat: no-repeat; background-position: center; }
+.source { color: #8a7a5a; font-size: 1em; margin-top: 24px; letter-spacing: 0.2em; text-transform: uppercase; }
 </style>
-</head>
-<body>
 <div class="cover">
-  <div class="icon" role="img" aria-label="Paperboy"></div>
+  <p class="kicker">Paperboy</p>
   <h1 class="title">${escapeXml(title)}</h1>
-  <p class="author">${escapeXml(author)}</p>
+  <div class="rule"></div>
+  <p class="author">by ${escapeXml(author)}</p>
+  <div class="icon" role="img" aria-label="Paperboy"></div>
   ${sourceHtml}
-</div>
-</body>
-</html>`;
+</div>`;
   }
 
   /**
@@ -172,26 +168,28 @@ export class CoverGenerator {
    */
   async generateImage(title: string, author: string): Promise<Buffer> {
     const iconDataUri = `data:image/png;base64,${this.iconBase64}`;
-    const titleLines = wrapTitle(title);
-    const titleStartY = 290;
-    const lineSpacing = 46;
+    const titleLines = wrapTitle(title, 16, 4);
+    const titleStartY = 155;
+    const lineSpacing = 76;
 
     const titleElements = titleLines
       .map(
         (line, i) =>
-          `<text x="300" y="${titleStartY + i * lineSpacing}" font-family="sans-serif" font-size="32" font-weight="bold" fill="#cdd6f4" text-anchor="middle">${escapeXml(line)}</text>`,
+          `<text x="300" y="${titleStartY + i * lineSpacing}" font-family="Georgia, serif" font-size="68" font-weight="700" fill="#1a1a1a" text-anchor="middle">${escapeXml(line)}</text>`,
       )
       .join("\n  ");
 
-    const authorY = titleStartY + titleLines.length * lineSpacing + 28;
+    const ruleY = titleStartY + titleLines.length * lineSpacing + 20;
+    const authorY = ruleY + 50;
 
     const svg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="600" height="900" viewBox="0 0 600 900">
-  <rect width="600" height="900" fill="#1e1e2e"/>
-  <rect x="0" y="0" width="600" height="4" fill="#89b4fa"/>
-  <image x="220" y="80" width="160" height="160" xlink:href="${iconDataUri}"/>
+  <rect width="600" height="900" fill="#f5efe4"/>
+  <text x="300" y="90" font-family="Georgia, serif" font-size="18" font-weight="700" fill="#a03020" text-anchor="middle" letter-spacing="6">PAPERBOY</text>
   ${titleElements}
-  <text x="300" y="${authorY}" font-family="sans-serif" font-size="22" fill="#a6adc8" text-anchor="middle">${escapeXml(author)}</text>
+  <line x1="230" y1="${ruleY}" x2="370" y2="${ruleY}" stroke="#a03020" stroke-width="2"/>
+  <text x="300" y="${authorY}" font-family="Georgia, serif" font-size="28" font-style="italic" fill="#4a4a4a" text-anchor="middle">${escapeXml(`by ${author}`)}</text>
+  <image x="110" y="525" width="380" height="320" xlink:href="${iconDataUri}"/>
 </svg>`;
 
     return sharp(Buffer.from(svg)).jpeg({ quality: 90 }).toBuffer();
