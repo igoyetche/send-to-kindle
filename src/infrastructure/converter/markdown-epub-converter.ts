@@ -67,7 +67,7 @@ export class MarkdownEpubConverter implements ContentConverter {
         await this.imageProcessor.process(safeHtml);
 
       // Generate cover assets — FR-36 (HTML chapter) and FR-37 (JPEG image)
-      const coverCss = await this.coverGenerator.generateCoverCss();
+      const coverCss = this.coverGenerator.generateCoverCss();
       const jpegBuffer = await this.coverGenerator.generateImage(
         title.value,
         author.value,

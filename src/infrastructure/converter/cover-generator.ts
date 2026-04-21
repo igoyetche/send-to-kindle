@@ -93,7 +93,6 @@ export function wrapTitle(
  */
 export class CoverGenerator {
   private readonly iconBase64: string;
-  private coverCssCache?: string;
 
   constructor() {
     const dir = dirname(fileURLToPath(import.meta.url));
@@ -101,25 +100,14 @@ export class CoverGenerator {
     this.iconBase64 = readFileSync(iconPath).toString("base64");
   }
 
-  /**
+    /**
    * Returns the CSS string for the EPUB stylesheet.
    * Pass this to epub-gen-memory's `css` option so styles land in <head>, not <body>.
    *
-   * The icon is resized to ≤480 px before base64-encoding so the CSS file
-   * stays small (source PNG is 1.44 MB; resized output is ~20–50 KB).
-   * Result is cached — resize only runs once per CoverGenerator instance.
-   *
    * Implements FR-36 (PB-008).
    */
-  async generateCoverCss(): Promise<string> {
-    if (this.coverCssCache !== undefined) return this.coverCssCache;
-    const resized = await sharp(Buffer.from(this.iconBase64, "base64"))
-      .resize(480, 480, { fit: "inside", withoutEnlargement: true })
-      .png({ compressionLevel: 9 })
-      .toBuffer();
-    const iconDataUri = `data:image/png;base64,${resized.toString("base64")}`;
-    this.coverCssCache = buildCoverCss(iconDataUri);
-    return this.coverCssCache;
+  generateCoverCss(): string {
+    return buildCoverCss();
   }
 
   /**
