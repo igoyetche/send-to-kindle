@@ -57,7 +57,7 @@ export function buildHtmlChapter(
  * and is linked from every chapter's <head>.
  */
 export function buildCoverCss(): string {
-  return `body { background: #f5efe4; font-family: Georgia, serif; }
+  return `body { font-family: Georgia, serif; }
 .cover { background: #f5efe4; text-align: center; padding: 60px 20px; }
 .kicker { color: #a03020; font-size: 0.75em; font-weight: bold; letter-spacing: 0.4em; text-transform: uppercase; margin-bottom: 24px; }
 .title { color: #1a1a1a; font-size: 2.2em; font-weight: bold; line-height: 1.25; margin-bottom: 20px; }
