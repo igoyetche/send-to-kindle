@@ -91,25 +91,29 @@ describe("CoverGenerator.generateHtmlChapter", () => {
     expect(html).toContain("Author &quot;Quoted&quot;");
   });
 
-  it("does not contain any inline styles or embedded images", () => {
+  it("does not contain any inline styles or img tags", () => {
     const html = generator.generateHtmlChapter("Title", "Claude");
     expect(html).not.toContain("<style");
     expect(html).not.toContain("<img");
-    expect(html).not.toContain("data:");
+  });
+
+  it("includes the icon placeholder div", () => {
+    const html = generator.generateHtmlChapter("Title", "Claude");
+    expect(html).toContain('class="icon"');
   });
 });
 
 describe("CoverGenerator.generateCoverCss", () => {
   const generator = new CoverGenerator();
 
-  it("returns a non-empty CSS string", () => {
-    const css = generator.generateCoverCss();
+  it("returns a non-empty CSS string", async () => {
+    const css = await generator.generateCoverCss();
     expect(typeof css).toBe("string");
     expect(css.length).toBeGreaterThan(0);
   });
 
-  it("contains cover chapter class selectors", () => {
-    const css = generator.generateCoverCss();
+  it("contains cover chapter class selectors", async () => {
+    const css = await generator.generateCoverCss();
     expect(css).toContain(".cover");
     expect(css).toContain(".kicker");
     expect(css).toContain(".title");
@@ -117,10 +121,17 @@ describe("CoverGenerator.generateCoverCss", () => {
     expect(css).toContain(".rule");
   });
 
-  it("does not contain any base64 data URIs", () => {
-    const css = generator.generateCoverCss();
-    expect(css).not.toContain("data:image");
-    expect(css).not.toContain("base64");
+  it("includes the icon as a CSS background-image data URI", async () => {
+    const css = await generator.generateCoverCss();
+    expect(css).toContain(".icon");
+    expect(css).toContain("background-image");
+    expect(css).toContain("data:image/png;base64,");
+  });
+
+  it("returns the same string on repeated calls (cached)", async () => {
+    const css1 = await generator.generateCoverCss();
+    const css2 = await generator.generateCoverCss();
+    expect(css1).toBe(css2);
   });
 });
 

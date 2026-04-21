@@ -11,9 +11,10 @@
  * EPUB validator. A <style> element inside <body> is invalid EPUB XHTML and
  * causes E999 processing failures on Amazon's Send to Kindle service.
  *
- * The cover icon is intentionally omitted from the HTML chapter to avoid
- * embedding a large base64 data URI in the chapter XHTML. The icon appears
- * in the JPEG cover image (the Kindle library thumbnail) via buildCoverSvg.
+ * The icon is included in the HTML chapter via CSS background-image, but the
+ * caller (CoverGenerator) resizes it to ≤480 px before base64-encoding it so
+ * the CSS file stays small. The full-resolution icon is used only in the SVG
+ * rasterised to the JPEG cover thumbnail.
  */
 
 function escapeXml(text: string): string {
@@ -47,6 +48,7 @@ export function buildHtmlChapter(
   <h1 class="title">${escapeXml(title)}</h1>
   <div class="rule"></div>
   <p class="author">by ${escapeXml(author)}</p>
+  <div class="icon" role="img" aria-label="Paperboy"></div>
   ${sourceHtml}
 </div>`;
 }
@@ -55,14 +57,17 @@ export function buildHtmlChapter(
  * Returns the CSS string for the cover chapter and global EPUB styles.
  * Passed to epub-gen-memory's `css` option so it ends up in OEBPS/style.css
  * and is linked from every chapter's <head>.
+ *
+ * @param iconDataUri  Pre-resized icon as a data URI (keep ≤480 px to stay small).
  */
-export function buildCoverCss(): string {
+export function buildCoverCss(iconDataUri: string): string {
   return `body { background: #f5efe4; font-family: Georgia, serif; }
 .cover { background: #f5efe4; text-align: center; padding: 60px 20px; }
 .kicker { color: #a03020; font-size: 0.75em; font-weight: bold; letter-spacing: 0.4em; text-transform: uppercase; margin-bottom: 24px; }
 .title { color: #1a1a1a; font-size: 2.2em; font-weight: bold; line-height: 1.25; margin-bottom: 20px; }
 .rule { width: 100px; height: 2px; background: #a03020; margin: 0 auto 20px; }
 .author { color: #4a4a4a; font-size: 1.4em; font-style: italic; }
+.icon { width: 240px; height: 240px; margin: 48px auto 0; background-image: url('${iconDataUri}'); background-size: contain; background-repeat: no-repeat; background-position: center; }
 .source { color: #8a7a5a; font-size: 1em; margin-top: 24px; letter-spacing: 0.2em; text-transform: uppercase; }
 hr { border: 0; border-bottom: 1px solid #dedede; margin: 60px 10%; }`;
 }
