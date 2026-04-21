@@ -45,39 +45,35 @@ export function wrapTitle(
   const words = title.split(" ");
   const lines: string[] = [];
   let current = "";
-  // Set to true when we break early because a word doesn't fit on the last line.
-  // This indicates content was truncated and "…" should be appended.
-  let wasOverflowed = false;
 
   for (const word of words) {
     if (current.length === 0) {
       current = word;
-    } else if (current.length + 1 + word.length <= maxLineChars) {
-      current += " " + word;
-    } else {
-      if (lines.length >= maxLines - 1) {
-        // A word doesn't fit and we're already on the last allowed line —
-        // truncate current and mark overflow.
-        const withEllipsis = current + "…";
-        current =
-          withEllipsis.length <= maxLineChars
-            ? withEllipsis
-            : current.slice(0, maxLineChars - 1) + "…";
-        wasOverflowed = true;
-        break;
-      }
-      // Word doesn't fit on current line, but we have room for another line.
-      lines.push(current);
-      current = word;
+      continue;
     }
+
+    const candidate = `${current} ${word}`;
+
+    if (candidate.length <= maxLineChars) {
+      current = candidate;
+      continue;
+    }
+
+    if (lines.length >= maxLines - 1) {
+      const withEllipsis = `${current}…`;
+      lines.push(
+        withEllipsis.length <= maxLineChars
+          ? withEllipsis
+          : `${current.slice(0, maxLineChars - 1)}…`,
+      );
+      return lines;
+    }
+
+    lines.push(current);
+    current = word;
   }
 
-  // If we didn't break early due to overflow and have remaining content,
-  // push it (whether or not we're on the last line).
-  if (current.length > 0 && lines.length < maxLines && !wasOverflowed) {
-    lines.push(current);
-  } else if (current.length > 0 && wasOverflowed) {
-    // Overflow case: current already has "…", just push it.
+  if (current.length > 0) {
     lines.push(current);
   }
 
