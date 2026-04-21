@@ -143,3 +143,11 @@ vite.config.ts.timestamp-*
 
 # Git worktrees
 .worktrees/
+
+# Sonar scan output artifacts
+sonar-issues.txt
+sonar-secrets-output.txt
+sonar-verify-output.txt
+
+# Claude Code auto-generated settings (local only)
+.claude/settings.json

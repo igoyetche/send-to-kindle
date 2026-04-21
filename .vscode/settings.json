@@ -1,4 +1,8 @@
 {
   "vitest.enable": true,
-  "vitest.configSearchPatternExclude": []
+  "vitest.configSearchPatternExclude": [],
+  "sonarlint.connectedMode.project": {
+    "connectionId": "igoyetche",
+    "projectKey": "paperboy"
+  }
 }

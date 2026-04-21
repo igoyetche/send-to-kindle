@@ -14,6 +14,7 @@ import {
   SizeLimitError,
   ConversionError,
   DeliveryError,
+  FrontmatterError,
   ok,
   err,
 } from "../../src/domain/errors.js";
@@ -118,7 +119,7 @@ describe("parseArgs", () => {
 
       expect(result.kind).toBe("args");
       if (result.kind === "args") {
-        expect(result.title).toBe("");
+        expect(result.title).toBeUndefined();
       }
     });
 
@@ -145,7 +146,7 @@ describe("parseArgs", () => {
 
       expect(result.kind).toBe("args");
       if (result.kind === "args") {
-        expect(result.title).toBe("");
+        expect(result.title).toBeUndefined();
         expect(result.help).toBe(false);
         expect(result.version).toBe(false);
       }
@@ -283,6 +284,11 @@ describe("mapErrorToExitCode", () => {
     it("maps DeliveryError with rejection cause to exit code 3", () => {
       const error = new DeliveryError("rejection", "Message rejected");
       expect(mapErrorToExitCode(error)).toBe(3);
+    });
+
+    it("maps FrontmatterError to exit code 1", () => {
+      const error = new FrontmatterError("Malformed YAML frontmatter");
+      expect(mapErrorToExitCode(error)).toBe(1);
     });
   });
 });
@@ -658,6 +664,194 @@ describe("run", () => {
         expect.objectContaining({ value: "DefaultBot" }),
         expect.anything(),
       );
+    });
+  });
+
+  describe("FR-CLI-4: parseArgs with optional title", () => {
+    it("parseArgs accepts missing --title without error", () => {
+      const result = parseArgs(["--file", "notes.md"]);
+
+      expect(result.kind).toBe("args");
+      if (result.kind === "args") {
+        expect(result.title).toBeUndefined();
+        expect(result.filePath).toBe("notes.md");
+      }
+    });
+
+    it("parseArgs accepts empty argv", () => {
+      const result = parseArgs([]);
+
+      expect(result.kind).toBe("args");
+      if (result.kind === "args") {
+        expect(result.title).toBeUndefined();
+      }
+    });
+  });
+
+  describe("FR-CLI-4: frontmatter title resolution", () => {
+    it("run with --file and frontmatter → title from metadata when explicit arg absent", async () => {
+      const service = fakeRunService(
+        ok({ title: "Metadata Title", sizeBytes: 1024, deviceName: "personal" }),
+      );
+      const frontmatterParser = {
+        parse: vi.fn().mockReturnValue(
+          ok({
+            metadata: DocumentMetadata.fromRecord({
+              title: "Metadata Title",
+            }),
+            body: "# Body content",
+          }),
+        ),
+      } as unknown as FrontmatterParser;
+
+      const stderr = vi.fn();
+      const deps = makeDeps({
+        service,
+        argv: ["--file", "article.md"],
+        isTTY: true,
+        readFromFile: vi.fn().mockResolvedValue("---\ntitle: Metadata Title\n---\n# Body"),
+        frontmatterParser,
+        stderr,
+      });
+
+      const code = await run(deps);
+
+      expect(code).toBe(0);
+      expect(service.execute).toHaveBeenCalledWith(
+        expect.objectContaining({ value: "Metadata Title" }),
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+      );
+    });
+
+    it("run with --file, no frontmatter → title from filename stem", async () => {
+      const service = fakeRunService(
+        ok({ title: "article", sizeBytes: 1024, deviceName: "personal" }),
+      );
+      const frontmatterParser = {
+        parse: vi.fn().mockReturnValue(
+          ok({
+            metadata: DocumentMetadata.empty(),
+            body: "# H1 Title\nBody content",
+          }),
+        ),
+      } as unknown as FrontmatterParser;
+
+      const stderr = vi.fn();
+      const deps = makeDeps({
+        service,
+        argv: ["--file", "article.md"],
+        isTTY: true,
+        readFromFile: vi.fn().mockResolvedValue("# H1 Title\nBody content"),
+        frontmatterParser,
+        stderr,
+      });
+
+      const code = await run(deps);
+
+      expect(code).toBe(0);
+      expect(service.execute).toHaveBeenCalledWith(
+        expect.objectContaining({ value: "article" }),
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+      );
+    });
+
+    it("run with --file, --title override → explicit wins over metadata", async () => {
+      const service = fakeRunService(
+        ok({ title: "Explicit Title", sizeBytes: 1024, deviceName: "personal" }),
+      );
+      const frontmatterParser = {
+        parse: vi.fn().mockReturnValue(
+          ok({
+            metadata: DocumentMetadata.fromRecord({
+              title: "Metadata Title",
+            }),
+            body: "# Body content",
+          }),
+        ),
+      } as unknown as FrontmatterParser;
+
+      const stderr = vi.fn();
+      const deps = makeDeps({
+        service,
+        argv: ["--title", "Explicit Title", "--file", "article.md"],
+        isTTY: true,
+        readFromFile: vi.fn().mockResolvedValue("---\ntitle: Metadata Title\n---\n# Body"),
+        frontmatterParser,
+        stderr,
+      });
+
+      const code = await run(deps);
+
+      expect(code).toBe(0);
+      expect(service.execute).toHaveBeenCalledWith(
+        expect.objectContaining({ value: "Explicit Title" }),
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+      );
+    });
+
+    it("run with stdin + frontmatter → metadata title used", async () => {
+      const service = fakeRunService(
+        ok({ title: "Stdin Metadata Title", sizeBytes: 1024, deviceName: "personal" }),
+      );
+      const frontmatterParser = {
+        parse: vi.fn().mockReturnValue(
+          ok({
+            metadata: DocumentMetadata.fromRecord({
+              title: "Stdin Metadata Title",
+            }),
+            body: "# Body from stdin",
+          }),
+        ),
+      } as unknown as FrontmatterParser;
+
+      const stderr = vi.fn();
+      const deps = makeDeps({
+        service,
+        argv: [],
+        isTTY: false,
+        readFromStdin: vi.fn().mockResolvedValue("---\ntitle: Stdin Metadata Title\n---\n# Body"),
+        frontmatterParser,
+        stderr,
+      });
+
+      const code = await run(deps);
+
+      expect(code).toBe(0);
+      expect(service.execute).toHaveBeenCalledWith(
+        expect.objectContaining({ value: "Stdin Metadata Title" }),
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+      );
+    });
+
+    it("run with malformed frontmatter → exit 1, error message", async () => {
+      const frontmatterParser = {
+        parse: vi.fn().mockReturnValue(
+          err(new FrontmatterError("Invalid YAML in frontmatter")),
+        ),
+      } as unknown as FrontmatterParser;
+
+      const stderr = vi.fn();
+      const deps = makeDeps({
+        argv: ["--title", "Test", "--file", "bad.md"],
+        readFromFile: vi.fn().mockResolvedValue("---\ninvalid: yaml: here:\n---\n# Body"),
+        frontmatterParser,
+        stderr,
+      });
+
+      const code = await run(deps);
+
+      expect(code).toBe(1);
+      const calls = stderr.mock.calls.map((c) => c[0] as string);
+      const combined = calls.join("\n");
+      expect(combined).toMatch(/error|invalid|frontmatter/i);
     });
   });
 

@@ -5,6 +5,7 @@ import {
   err,
   ConversionError,
   DeliveryError,
+  FrontmatterError,
 } from "../../src/domain/errors.js";
 import type { SendToKindleService } from "../../src/domain/send-to-kindle-service.js";
 import type { FrontmatterParser } from "../../src/domain/ports.js";
@@ -157,5 +158,110 @@ describe("ToolHandler", () => {
     const response = await handler.handle({ title: "Test", content: "# Hi" });
 
     expect(response.isError).toBe(true);
+  });
+
+  describe("FR-MCP-1: frontmatter title resolution", () => {
+    it("uses metadata title when title arg omitted and frontmatter present", async () => {
+      const service = fakeService(
+        ok({ title: "Metadata Title", sizeBytes: 1024, deviceName: "personal" }),
+      );
+      const frontmatterParser = {
+        parse: vi.fn().mockReturnValue(
+          ok({
+            metadata: DocumentMetadata.fromRecord({
+              title: "Metadata Title",
+            }),
+            body: "# Body content",
+          }),
+        ),
+      } as unknown as FrontmatterParser;
+
+      const handler = new ToolHandler(service, "Claude", makeRegistry("personal"), frontmatterParser);
+
+      const response = await handler.handle({ content: "---\ntitle: Metadata Title\n---\n# Body" });
+
+      const parsed = JSON.parse((response.content[0] as { text: string }).text);
+      expect(parsed.success).toBe(true);
+      expect(service.execute).toHaveBeenCalledWith(
+        expect.objectContaining({ value: "Metadata Title" }),
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+      );
+    });
+
+    it("explicit title wins over metadata when both present", async () => {
+      const service = fakeService(
+        ok({ title: "Explicit Title", sizeBytes: 1024, deviceName: "personal" }),
+      );
+      const frontmatterParser = {
+        parse: vi.fn().mockReturnValue(
+          ok({
+            metadata: DocumentMetadata.fromRecord({
+              title: "Metadata Title",
+            }),
+            body: "# Body content",
+          }),
+        ),
+      } as unknown as FrontmatterParser;
+
+      const handler = new ToolHandler(service, "Claude", makeRegistry("personal"), frontmatterParser);
+
+      const response = await handler.handle({
+        title: "Explicit Title",
+        content: "---\ntitle: Metadata Title\n---\n# Body",
+      });
+
+      const parsed = JSON.parse((response.content[0] as { text: string }).text);
+      expect(parsed.success).toBe(true);
+      expect(service.execute).toHaveBeenCalledWith(
+        expect.objectContaining({ value: "Explicit Title" }),
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+      );
+    });
+
+    it("returns validation error when title omitted and no frontmatter metadata", async () => {
+      const service = fakeService();
+      const frontmatterParser = {
+        parse: vi.fn().mockReturnValue(
+          ok({
+            metadata: DocumentMetadata.empty(),
+            body: "# No frontmatter, no title arg",
+          }),
+        ),
+      } as unknown as FrontmatterParser;
+
+      const handler = new ToolHandler(service, "Claude", makeRegistry("personal"), frontmatterParser);
+
+      const response = await handler.handle({ content: "# No frontmatter, no title arg" });
+
+      const parsed = JSON.parse((response.content[0] as { text: string }).text);
+      expect(parsed.success).toBe(false);
+      expect(parsed.error).toBe("VALIDATION_ERROR");
+      expect(parsed.details).toMatch(/title/i);
+    });
+
+    it("returns FRONTMATTER_ERROR when frontmatter parsing fails", async () => {
+      const service = fakeService();
+      const frontmatterParser = {
+        parse: vi.fn().mockReturnValue(
+          err(new FrontmatterError("Invalid YAML in frontmatter")),
+        ),
+      } as unknown as FrontmatterParser;
+
+      const handler = new ToolHandler(service, "Claude", makeRegistry("personal"), frontmatterParser);
+
+      const response = await handler.handle({
+        title: "Test",
+        content: "---\ninvalid: yaml: here:\n---\n# Body",
+      });
+
+      const parsed = JSON.parse((response.content[0] as { text: string }).text);
+      expect(parsed.success).toBe(false);
+      expect(parsed.error).toBe("FRONTMATTER_ERROR");
+      expect(response.isError).toBe(true);
+    });
   });
 });

@@ -4,6 +4,7 @@ import type { WatcherDeps, StartWatcherDeps } from "../../src/application/watche
 import {
   ConversionError,
   DeliveryError,
+  FrontmatterError,
   ok,
   err,
 } from "../../src/domain/errors.js";
@@ -370,6 +371,169 @@ describe("processFile", () => {
       const [titleArg] = (deps.service.execute as ReturnType<typeof vi.fn>).mock.calls[0] as [{ value: string }, ...unknown[]];
       expect(titleArg.value).toBe("my-report");
       expect(deps.moveToSent).toHaveBeenCalledWith("/inbox/my-report.md");
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // 11. Frontmatter title resolution
+  // -------------------------------------------------------------------------
+
+  describe("frontmatter title resolution", () => {
+    it("uses metadata title from frontmatter when present", async () => {
+      const frontmatterParser = {
+        parse: vi.fn().mockReturnValue(
+          ok({
+            metadata: DocumentMetadata.fromRecord({ title: "From Metadata" }),
+            body: "# This is H1\nBody content",
+          }),
+        ),
+      } as unknown as FrontmatterParser;
+
+      const deps = makeDeps({
+        readFile: vi.fn().mockResolvedValue("---\ntitle: From Metadata\n---\n# This is H1\nBody content"),
+        frontmatterParser,
+      });
+
+      const promise = processFile("/inbox/article.md", deps);
+      await vi.runAllTimersAsync();
+      await promise;
+
+      expect(deps.service.execute).toHaveBeenCalledTimes(1);
+      const [titleArg] = (deps.service.execute as ReturnType<typeof vi.fn>).mock.calls[0] as [{ value: string }, ...unknown[]];
+      expect(titleArg.value).toBe("From Metadata");
+      expect(deps.moveToSent).toHaveBeenCalled();
+    });
+
+    it("prefers metadata title over H1 when both present", async () => {
+      const frontmatterParser = {
+        parse: vi.fn().mockReturnValue(
+          ok({
+            metadata: DocumentMetadata.fromRecord({ title: "Metadata Wins" }),
+            body: "# H1 Title\nBody",
+          }),
+        ),
+      } as unknown as FrontmatterParser;
+
+      const deps = makeDeps({
+        readFile: vi
+          .fn()
+          .mockResolvedValue("---\ntitle: Metadata Wins\n---\n# H1 Title\nBody"),
+        frontmatterParser,
+      });
+
+      const promise = processFile("/inbox/test.md", deps);
+      await vi.runAllTimersAsync();
+      await promise;
+
+      expect(deps.service.execute).toHaveBeenCalledTimes(1);
+      const [titleArg] = (deps.service.execute as ReturnType<typeof vi.fn>).mock.calls[0] as [{ value: string }, ...unknown[]];
+      expect(titleArg.value).toBe("Metadata Wins");
+    });
+
+    it("falls back to H1 when no metadata title (regression check)", async () => {
+      const frontmatterParser = {
+        parse: vi.fn().mockReturnValue(
+          ok({
+            metadata: DocumentMetadata.empty(),
+            body: "# H1 Title\nBody",
+          }),
+        ),
+      } as unknown as FrontmatterParser;
+
+      const deps = makeDeps({
+        readFile: vi.fn().mockResolvedValue("# H1 Title\nBody"),
+        frontmatterParser,
+      });
+
+      const promise = processFile("/inbox/test.md", deps);
+      await vi.runAllTimersAsync();
+      await promise;
+
+      expect(deps.service.execute).toHaveBeenCalledTimes(1);
+      const [titleArg] = (deps.service.execute as ReturnType<typeof vi.fn>).mock.calls[0] as [{ value: string }, ...unknown[]];
+      expect(titleArg.value).toBe("H1 Title");
+    });
+
+    it("falls back to filename when no metadata or H1 (regression check)", async () => {
+      const frontmatterParser = {
+        parse: vi.fn().mockReturnValue(
+          ok({
+            metadata: DocumentMetadata.empty(),
+            body: "Just content",
+          }),
+        ),
+      } as unknown as FrontmatterParser;
+
+      const deps = makeDeps({
+        readFile: vi.fn().mockResolvedValue("Just content"),
+        frontmatterParser,
+      });
+
+      const promise = processFile("/inbox/my-file.md", deps);
+      await vi.runAllTimersAsync();
+      await promise;
+
+      expect(deps.service.execute).toHaveBeenCalledTimes(1);
+      const [titleArg] = (deps.service.execute as ReturnType<typeof vi.fn>).mock.calls[0] as [{ value: string }, ...unknown[]];
+      expect(titleArg.value).toBe("my-file");
+    });
+
+    it("moves to error on malformed frontmatter", async () => {
+      const frontmatterParser = {
+        parse: vi
+          .fn()
+          .mockReturnValue(err(new FrontmatterError("Invalid YAML in frontmatter"))),
+      } as unknown as FrontmatterParser;
+
+      const deps = makeDeps({
+        readFile: vi
+          .fn()
+          .mockResolvedValue("---\ninvalid: yaml: here:\n---\n# Body"),
+        frontmatterParser,
+      });
+
+      const promise = processFile("/inbox/bad.md", deps);
+      await vi.runAllTimersAsync();
+      await promise;
+
+      expect(deps.service.execute).not.toHaveBeenCalled();
+      expect(deps.moveToSent).not.toHaveBeenCalled();
+      expect(deps.moveToError).toHaveBeenCalledWith(
+        "/inbox/bad.md",
+        "frontmatter",
+        expect.stringContaining("YAML"),
+      );
+    });
+
+    it("strips frontmatter body before MarkdownContent validation", async () => {
+      // Create content that would exceed size limit if frontmatter weren't stripped
+      const oversizedFrontmatter = "---\n" + "x".repeat(100) + "\n---\n";
+      const oversizedBody = "y".repeat(26 * 1024 * 1024); // 26 MB without frontmatter
+
+      const frontmatterParser = {
+        parse: vi.fn().mockReturnValue(
+          ok({
+            metadata: DocumentMetadata.empty(),
+            body: oversizedBody,
+          }),
+        ),
+      } as unknown as FrontmatterParser;
+
+      const deps = makeDeps({
+        readFile: vi.fn().mockResolvedValue(oversizedFrontmatter + oversizedBody),
+        frontmatterParser,
+      });
+
+      const promise = processFile("/inbox/large.md", deps);
+      await vi.runAllTimersAsync();
+      await promise;
+
+      // Should fail on body size validation, not frontmatter parsing
+      expect(deps.moveToError).toHaveBeenCalledWith(
+        "/inbox/large.md",
+        "size_limit",
+        expect.stringContaining("MB"),
+      );
     });
   });
 });
