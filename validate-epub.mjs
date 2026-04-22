@@ -73,7 +73,7 @@ async function validateOPF(zip) {
 async function validateContent(zip) {
   console.log("\n✓ Content Validation:");
   const chapterFiles = Object.keys(zip.files).filter(
-    (p) => /OEBPS\/\d+.*\.xhtml$/.test(p)
+    (p) => /OEBPS\/\d+[^/]*\.xhtml$/.test(p)
   );
   console.log(`  ✓ Chapter files: ${chapterFiles.length}`);
 
