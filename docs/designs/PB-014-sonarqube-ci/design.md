@@ -39,7 +39,7 @@ Three independent deliverables that compose into a single workflow:
 Tells `sonar-scanner` where sources, tests, and coverage live:
 
 ```properties
-sonar.projectKey=igoyetche_send-to-kindle
+sonar.projectKey=paperboy
 sonar.organization=igoyetche
 sonar.sources=src
 sonar.tests=test
@@ -145,7 +145,7 @@ Add after the existing `npm test` step:
 
 ```markdown
 - [ ] **SonarQube local scan:** Run `npm run sonar:local` and review results at
-      https://sonarcloud.io/project/issues?id=igoyetche_send-to-kindle.
+      https://sonarcloud.io/project/issues?id=paperboy.
       Resolve any bugs or vulnerabilities before creating the PR.
       For hotspots, confirm they are safe before proceeding.
 ```

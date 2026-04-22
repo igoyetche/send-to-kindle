@@ -78,7 +78,7 @@ When ALL tasks are [x] or [-]:
 - [ ] **STATUS.md synced:** Feature removed from "Active Work" section, added to "Completed" section with completion date
 - [ ] **CHANGELOG.md updated:** Feature completion entry added (even if no spec changes)
 - [ ] **Final validation:** Run `npm test` and verify all tests pass with no uncommitted changes
-- [ ] **SonarQube local scan:** Run `npm run sonar:local` and review results at https://sonarcloud.io/project/issues?id=igoyetche_send-to-kindle. Resolve any bugs or vulnerabilities before creating the PR. For hotspots, confirm they are safe.
+- [ ] **SonarQube local scan:** Run `npm run sonar:local` and review results at https://sonarcloud.io/project/issues?id=paperboy. Resolve any bugs or vulnerabilities before creating the PR. For hotspots, confirm they are safe.
 - [ ] **Ready for PR:** All documentation reflects final state, no outstanding sync tasks
 
 Only after all items are checked off: create the PR.

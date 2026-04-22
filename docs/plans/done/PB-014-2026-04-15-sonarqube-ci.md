@@ -37,7 +37,7 @@
 Create this file at the repo root:
 
 ```properties
-sonar.projectKey=igoyetche_send-to-kindle
+sonar.projectKey=paperboy
 sonar.organization=igoyetche
 sonar.sources=src
 sonar.tests=test
@@ -112,7 +112,7 @@ Find the pre-PR checklist block. It currently ends with:
 Replace it with:
 ```markdown
 - [ ] **Final validation:** Run `npm test` and verify all tests pass with no uncommitted changes
-- [ ] **SonarQube local scan:** Run `npm run sonar:local` and review results at https://sonarcloud.io/project/issues?id=igoyetche_send-to-kindle. Resolve any bugs or vulnerabilities before creating the PR. For hotspots, confirm they are safe.
+- [ ] **SonarQube local scan:** Run `npm run sonar:local` and review results at https://sonarcloud.io/project/issues?id=paperboy. Resolve any bugs or vulnerabilities before creating the PR. For hotspots, confirm they are safe.
 - [ ] **Ready for PR:** All documentation reflects final state, no outstanding sync tasks
 ```
 
@@ -299,7 +299,7 @@ Add at the top (after the `---` separator, before the previous entry):
 ## 2026-04-14 — PB-014 Complete: SonarQube CI Workflow
 
 ### Feature Completed
-- **`sonar-project.properties`**: Configures SonarCloud project key (`igoyetche_send-to-kindle`), TypeScript sources, test directory, and lcov coverage path.
+- **`sonar-project.properties`**: Configures SonarCloud project key (`paperboy`), TypeScript sources, test directory, and lcov coverage path.
 - **`npm run sonar:local`**: One-command local scan — runs `test:coverage` (generates `coverage/lcov.info`) then `sonar-scanner`. Results appear on SonarCloud dashboard without a GitHub push.
 - **`/check-pr` global command**: `~/.claude/commands/check-pr.md` — reusable across all projects. Fetches CI check statuses via `gh pr checks`, extracts build errors via `gh run view --log-failed`, parses the SonarCloud bot comment. Reports findings and waits for per-issue instructions before acting.
 - **CLAUDE.md**: Pre-PR checklist gains a SonarQube scan step; new "Checking a PR After Creation" section documents the `/check-pr` command.

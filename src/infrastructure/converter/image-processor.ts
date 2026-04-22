@@ -85,6 +85,12 @@ interface DownloadedImage {
   format: string;
 }
 
+type SettledOutcome =
+  | { type: "added"; image: DownloadedImage; bytes: number }
+  | { type: "size_exceeded" }
+  | { type: "null_value" }
+  | { type: "failed"; reason: string };
+
 /**
  * Processes images in HTML: downloads remote images and converts unsupported formats.
  * Returns downloaded image buffers separately for EPUB embedding, keeps HTML unchanged.
@@ -160,33 +166,18 @@ export class ImageProcessor {
         const result = results[j];
         if (!result) continue;
 
-        const url = batch[j] || "";
+        const url = batch[j] ?? "";
+        const outcome = this.processOneSettledResult(result, url, totalBytes);
 
-        if (result.status === "fulfilled") {
-          const value = result.value;
-          if (value !== null) {
-            const { buffer, format } = value;
-
-            // Check if total would exceed limit
-            if (totalBytes + buffer.length > this.config.maxTotalBytes) {
-              this.logger.imageSkipped(
-                url,
-                "Total image payload would exceed limit",
-              );
-              skipped += 1;
-              continue;
-            }
-
-            images.push({ url, buffer, format });
-            totalBytes += buffer.length;
-          }
-        } else {
+        if (outcome.type === "failed") {
           failed += 1;
-          const reason =
-            result.reason instanceof Error
-              ? result.reason.message
-              : String(result.reason);
-          this.logger.imageDownloadFailure(url, reason);
+          this.logger.imageDownloadFailure(url, outcome.reason);
+        } else if (outcome.type === "size_exceeded") {
+          this.logger.imageSkipped(url, "Total image payload would exceed limit");
+          skipped += 1;
+        } else if (outcome.type === "added") {
+          images.push(outcome.image);
+          totalBytes += outcome.bytes;
         }
       }
     }
@@ -202,41 +193,64 @@ export class ImageProcessor {
     };
   }
 
+  private processOneSettledResult(
+    result: PromiseSettledResult<{ buffer: Buffer; format: string } | null>,
+    url: string,
+    totalBytes: number,
+  ): SettledOutcome {
+    if (result.status === "rejected") {
+      const reason =
+        result.reason instanceof Error
+          ? result.reason.message
+          : String(result.reason);
+      return { type: "failed", reason };
+    }
+    const value = result.value;
+    if (value === null) return { type: "null_value" };
+    const { buffer, format } = value;
+    if (totalBytes + buffer.length > this.config.maxTotalBytes) {
+      return { type: "size_exceeded" };
+    }
+    return { type: "added", image: { url, buffer, format }, bytes: buffer.length };
+  }
+
   private async downloadAndProcessImage(
     url: string,
     _currentTotalBytes: number,
   ): Promise<{ buffer: Buffer; format: string } | null> {
     this.logger.imageDownloadStart(url);
 
-    let buffer: Buffer | null = null;
-    let lastError: Error | null = null;
+    const rawBuffer = await this.downloadWithRetry(url);
 
-    // Retry loop
-    for (let attempt = 0; attempt <= this.config.retries; attempt++) {
-      try {
-        buffer = await this.fetchWithTimeout(url);
-        break;
-      } catch (error) {
-        lastError = error instanceof Error ? error : new Error(String(error));
-        if (attempt < this.config.retries) {
-          // Will retry
-          continue;
-        }
-      }
-    }
-
-    if (buffer === null) {
-      throw lastError || new Error("Failed to download image");
-    }
-
-    // Check size
-    if (buffer.length > this.config.maxImageBytes) {
+    if (rawBuffer.length > this.config.maxImageBytes) {
       throw new Error(
-        `Image exceeds ${this.config.maxImageBytes} bytes (${buffer.length} bytes)`,
+        `Image exceeds ${this.config.maxImageBytes} bytes (${rawBuffer.length} bytes)`,
       );
     }
 
-    // Detect format
+    const { buffer: finalBuffer, format: finalFormat } =
+      await this.detectAndNormalizeFormat(rawBuffer, url);
+
+    this.logger.imageDownloadSuccess(url, finalFormat, finalBuffer.length, 0);
+    return { buffer: finalBuffer, format: finalFormat };
+  }
+
+  private async downloadWithRetry(url: string): Promise<Buffer> {
+    let lastError: Error | null = null;
+    for (let attempt = 0; attempt <= this.config.retries; attempt++) {
+      try {
+        return await this.fetchWithTimeout(url);
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+      }
+    }
+    throw lastError ?? new Error("Failed to download image");
+  }
+
+  private async detectAndNormalizeFormat(
+    buffer: Buffer,
+    url: string,
+  ): Promise<{ buffer: Buffer; format: string }> {
     let metadata;
     try {
       metadata = await sharp(buffer).metadata();
@@ -254,28 +268,23 @@ export class ImageProcessor {
       throw new Error("Could not determine image format");
     }
 
-    // Convert if needed
-    let finalBuffer = buffer;
-    let finalFormat = format;
-
     if (CONVERT_FORMATS.has(format)) {
       try {
-        finalBuffer = await sharp(buffer).jpeg({ quality: 85 }).toBuffer();
-        finalFormat = "jpeg";
+        const converted = await sharp(buffer).jpeg({ quality: 85 }).toBuffer();
         this.logger.imageFormatConverted(url, format, "jpeg");
+        return { buffer: converted, format: "jpeg" };
       } catch (error) {
         throw new Error(
           `Could not convert ${format} to JPEG: ${error instanceof Error ? error.message : String(error)}`,
         );
       }
-    } else if (!KINDLE_FORMATS.has(format)) {
+    }
+
+    if (!KINDLE_FORMATS.has(format)) {
       throw new Error(`Unsupported image format: ${format}`);
     }
 
-    const duration = 0; // Not tracking actual duration in this implementation
-    this.logger.imageDownloadSuccess(url, finalFormat, finalBuffer.length, duration);
-
-    return { buffer: finalBuffer, format: finalFormat };
+    return { buffer, format };
   }
 
   private async validateUrl(url: string): Promise<void> {
@@ -292,7 +301,7 @@ export class ImageProcessor {
 
     // URL.hostname for IPv6 literals includes brackets: "[::1]" — strip them
     // before passing to dns.lookup, which expects bare IP strings.
-    const hostname = parsed.hostname.replace(/^\[|\]$/g, "");
+    const hostname = parsed.hostname.replaceAll(/^\[|\]$/g, "");
 
     const { address } = await dnsLookup(hostname, { verbatim: false });
     if (isPrivateIp(address)) {
@@ -370,8 +379,8 @@ export class ImageProcessor {
 
   private removeImageTag(html: string, url: string): string {
     // Escape special regex characters
-    const escapedUrl = url.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const escapedUrl = url.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
     const regex = new RegExp(`<img[^>]+src="${escapedUrl}"[^>]*>`, "gi");
-    return html.replace(regex, "");
+    return html.replaceAll(regex, "");
   }
 }
