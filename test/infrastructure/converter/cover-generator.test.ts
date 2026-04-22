@@ -24,7 +24,7 @@ describe("wrapTitle", () => {
       "One Two Three Four Five Six Seven Eight Nine Ten Eleven Twelve Thirteen Fourteen Fifteen";
     const lines = wrapTitle(tooLong);
     expect(lines.length).toBeLessThanOrEqual(3);
-    const lastLine = lines[lines.length - 1] ?? "";
+    const lastLine = lines.at(-1) ?? "";
     expect(lastLine.endsWith("…")).toBe(true);
   });
 
@@ -33,7 +33,7 @@ describe("wrapTitle", () => {
     const fitsExactly = "Short line Short line Short";
     const lines = wrapTitle(fitsExactly);
     expect(lines.length).toBeLessThanOrEqual(3);
-    const lastLine = lines[lines.length - 1] ?? "";
+    const lastLine = lines.at(-1) ?? "";
     expect(lastLine.endsWith("…")).toBe(false);
   });
 
