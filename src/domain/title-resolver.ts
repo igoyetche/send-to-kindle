@@ -1,7 +1,5 @@
 import { Title } from "./values/title.js";
-import type { Result } from "./errors.js";
-import { ValidationError } from "./errors.js";
-import { err } from "./errors.js";
+import { type Result, ValidationError, err } from "./errors.js";
 
 /**
  * Resolves a Title by trying candidates in order until one produces a valid Title.
