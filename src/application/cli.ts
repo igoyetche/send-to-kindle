@@ -53,7 +53,9 @@ const KNOWN_FLAGS = new Set([
   "--version",
 ]);
 
-const BOOLEAN_FLAGS = new Set(["--help", "--version"]);
+function isValueAvailable(value: string | undefined): value is string {
+  return value !== undefined && !value.startsWith("--");
+}
 
 /**
  * Parses a pre-sliced argv array (no argv[0]/argv[1]) into CliArgs or ParseError.
@@ -94,19 +96,12 @@ export function parseArgs(
       };
     }
 
-    if (BOOLEAN_FLAGS.has(token)) {
-      if (token === "--help") {
-        help = true;
-      } else if (token === "--version") {
-        version = true;
-      }
-      i += 1;
-      continue;
-    }
+    if (token === "--help") { help = true; i += 1; continue; }
+    if (token === "--version") { version = true; i += 1; continue; }
 
     // Value-bearing flag: next token must exist and not be another flag
     const next = argv[i + 1];
-    if (next === undefined || next.startsWith("--")) {
+    if (!isValueAvailable(next)) {
       return {
         kind: "parse-error",
         message: `Flag '${token}' requires a value but none was provided.`,
@@ -129,8 +124,7 @@ export function parseArgs(
       default: {
         // Should be unreachable given KNOWN_FLAGS check above, but keeps TS happy
         const _exhaustive: never = token as never;
-        void _exhaustive;
-        break;
+        return _exhaustive;
       }
     }
 
@@ -217,8 +211,7 @@ export function mapErrorToExitCode(error: DomainError): number {
       return 3;
     default: {
       const _exhaustive: never = error;
-      void _exhaustive;
-      return 1;
+      return _exhaustive;
     }
   }
 }

@@ -70,7 +70,7 @@ describe("DeviceRegistry", () => {
   it("resolve(undefined) returns the default device", () => {
     const registry = DeviceRegistry.create([makeDevice("personal")]);
     if (!registry.ok) throw new Error("bad test setup");
-    const result = registry.value.resolve(undefined);
+    const result = registry.value.resolve();
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.value.name).toBe("personal");

@@ -59,7 +59,16 @@ export class DeviceRegistry {
 
     let resolvedDefault: KindleDevice;
 
-    if (defaultDeviceName !== undefined) {
+    if (defaultDeviceName === undefined) {
+      const firstDevice = devices[0];
+      if (firstDevice === undefined) {
+        // Unreachable: guarded by length check above, but satisfies noUncheckedIndexedAccess
+        return err(
+          new ValidationError("devices", "At least one Kindle device must be configured."),
+        );
+      }
+      resolvedDefault = firstDevice;
+    } else {
       const normalized = defaultDeviceName.trim().toLowerCase();
       const found = map.get(normalized);
       if (found === undefined) {
@@ -71,15 +80,6 @@ export class DeviceRegistry {
         );
       }
       resolvedDefault = found;
-    } else {
-      const firstDevice = devices[0];
-      if (firstDevice === undefined) {
-        // Unreachable: guarded by length check above, but satisfies noUncheckedIndexedAccess
-        return err(
-          new ValidationError("devices", "At least one Kindle device must be configured."),
-        );
-      }
-      resolvedDefault = firstDevice;
     }
 
     return ok(new DeviceRegistry(map, resolvedDefault));
