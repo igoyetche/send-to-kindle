@@ -1,5 +1,12 @@
 # Paperboy
 
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=paperboy&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=paperboy)
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=paperboy&metric=bugs)](https://sonarcloud.io/summary/new_code?id=paperboy)
+[![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=paperboy&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=paperboy)
+[![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=paperboy&metric=ncloc)](https://sonarcloud.io/summary/new_code?id=paperboy)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=paperboy&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=paperboy)
+[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=paperboy&metric=vulnerabilities)](https://sonarcloud.io/summary/new_code?id=paperboy)
+
 Send Markdown content to your Kindle as an EPUB — from the terminal, from Claude Code, or from any MCP client.
 
 ## How It Works
