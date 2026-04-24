@@ -131,20 +131,6 @@ export function parseArgs(
     i += 2;
   }
 
-  // --help and --version short-circuit: title not required
-  if (help || version) {
-    return {
-      kind: "args",
-      title,
-      filePath,
-      author,
-      device,
-      help,
-      version,
-    };
-  }
-
-  // Title is now optional and resolved from multiple sources in run()
   return {
     kind: "args",
     title,
