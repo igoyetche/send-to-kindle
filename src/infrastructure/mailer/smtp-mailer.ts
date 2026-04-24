@@ -1,8 +1,7 @@
 import nodemailer from "nodemailer";
 import type { Transporter } from "nodemailer";
 import type { DocumentMailer } from "../../domain/ports.js";
-import type { EpubDocument } from "../../domain/values/index.js";
-import type { KindleDevice } from "../../domain/values/index.js";
+import type { EpubDocument, KindleDevice } from "../../domain/values/index.js";
 import { DeliveryError, type Result, ok, err } from "../../domain/errors.js";
 
 export interface EpubFilenameOptions {

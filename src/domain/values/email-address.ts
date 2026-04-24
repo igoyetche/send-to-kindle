@@ -9,7 +9,6 @@ export class EmailAddress {
     field: string = "email",
   ): Result<EmailAddress, ValidationError> {
     const trimmed = raw.trim();
-    // TODO: replace with RFC 5322 compliant validation in a future pass
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
       return err(
         new ValidationError(field, `Invalid email address: "${trimmed}".`),
