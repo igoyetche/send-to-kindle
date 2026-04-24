@@ -384,7 +384,7 @@ git -C /c/projects/experiments/paperboy/.worktrees/pb-008-epub-cover commit -m "
 - Modify: `test/infrastructure/converter/cover-generator.test.ts` (add image tests)
 - Modify: `src/infrastructure/converter/cover-generator.ts` (already has `generateImage`, tests just weren't added yet)
 
-- [ ] **Step 3.1: Add failing image tests to `test/infrastructure/converter/cover-generator.test.ts`**
+- [x] **Step 3.1: Add failing image tests to `test/infrastructure/converter/cover-generator.test.ts`** (2026-04-16)
 
 Append a new describe block after the `generateHtmlChapter` describe block:
 
@@ -434,7 +434,7 @@ describe("CoverGenerator.generateImage", () => {
 });
 ```
 
-- [ ] **Step 3.2: Run the image tests to confirm they pass**
+- [x] **Step 3.2: Run the image tests to confirm they pass** (2026-04-16)
 
 (The `generateImage` method was already implemented in Task 2. This step verifies it works.)
 
@@ -444,7 +444,7 @@ cd /c/projects/experiments/paperboy/.worktrees/pb-008-epub-cover && npm test -- 
 
 Expected: All tests pass including the new `generateImage` tests.
 
-- [ ] **Step 3.3: Run the full test suite to check no regressions**
+- [x] **Step 3.3: Run the full test suite to check no regressions** (2026-04-16)
 
 ```bash
 cd /c/projects/experiments/paperboy/.worktrees/pb-008-epub-cover && npm test 2>&1 | tail -10
@@ -452,7 +452,7 @@ cd /c/projects/experiments/paperboy/.worktrees/pb-008-epub-cover && npm test 2>&
 
 Expected: All 293 previously passing tests still pass, plus the new cover-generator tests.
 
-- [ ] **Step 3.4: Commit**
+- [x] **Step 3.4: Commit** (2026-04-16)
 
 ```bash
 git -C /c/projects/experiments/paperboy/.worktrees/pb-008-epub-cover add test/infrastructure/converter/cover-generator.test.ts
@@ -469,7 +469,7 @@ git -C /c/projects/experiments/paperboy/.worktrees/pb-008-epub-cover commit -m "
 
 Update the tests first (they will fail because the constructor still only accepts `ImageProcessor`), then update the implementation.
 
-- [ ] **Step 4.1: Update `test/infrastructure/converter/markdown-epub-converter.test.ts`**
+- [x] **Step 4.1: Update `test/infrastructure/converter/markdown-epub-converter.test.ts`** (2026-04-16)
 
 Replace the full file with the updated version below. Key changes:
 1. Import `CoverGenerator`
@@ -773,7 +773,7 @@ describe("MarkdownEpubConverter", () => {
 });
 ```
 
-- [ ] **Step 4.2: Run the updated converter tests to confirm they fail**
+- [x] **Step 4.2: Run the updated converter tests to confirm they fail** (2026-04-16)
 
 ```bash
 cd /c/projects/experiments/paperboy/.worktrees/pb-008-epub-cover && npm test -- --reporter=verbose test/infrastructure/converter/markdown-epub-converter.test.ts 2>&1 | tail -20
@@ -781,7 +781,7 @@ cd /c/projects/experiments/paperboy/.worktrees/pb-008-epub-cover && npm test -- 
 
 Expected: Tests fail because `MarkdownEpubConverter` constructor doesn't accept a second argument yet.
 
-- [ ] **Step 4.3: Update `src/infrastructure/converter/markdown-epub-converter.ts`**
+- [x] **Step 4.3: Update `src/infrastructure/converter/markdown-epub-converter.ts`** (2026-04-16)
 
 Replace the full file:
 
@@ -889,7 +889,7 @@ export class MarkdownEpubConverter implements ContentConverter {
 }
 ```
 
-- [ ] **Step 4.4: Run the converter tests to confirm they pass**
+- [x] **Step 4.4: Run the converter tests to confirm they pass** (2026-04-16)
 
 ```bash
 cd /c/projects/experiments/paperboy/.worktrees/pb-008-epub-cover && npm test -- --reporter=verbose test/infrastructure/converter/markdown-epub-converter.test.ts 2>&1 | tail -20
@@ -897,7 +897,7 @@ cd /c/projects/experiments/paperboy/.worktrees/pb-008-epub-cover && npm test -- 
 
 Expected: All tests pass.
 
-- [ ] **Step 4.5: Run the full test suite to check for regressions**
+- [x] **Step 4.5: Run the full test suite to check for regressions** (2026-04-16)
 
 ```bash
 cd /c/projects/experiments/paperboy/.worktrees/pb-008-epub-cover && npm test 2>&1 | tail -10
@@ -905,7 +905,7 @@ cd /c/projects/experiments/paperboy/.worktrees/pb-008-epub-cover && npm test 2>&
 
 Expected: All previously passing tests still pass. TypeScript may fail to build — that is expected and will be fixed in Task 5.
 
-- [ ] **Step 4.6: Commit**
+- [x] **Step 4.6: Commit** (2026-04-16)
 
 ```bash
 git -C /c/projects/experiments/paperboy/.worktrees/pb-008-epub-cover add src/infrastructure/converter/markdown-epub-converter.ts test/infrastructure/converter/markdown-epub-converter.test.ts

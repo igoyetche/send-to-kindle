@@ -1,6 +1,6 @@
 # PB-018: Markdown Frontmatter Metadata
 
-**Status:** Active — Design
+**Status:** Active — Validation
 **Date:** 2026-04-10
 **Design Started:** 2026-04-10
 **Branch:** `pb-018-markdown-frontmatter-metadata`
